@@ -79,8 +79,12 @@ section:last-of-type > div {
     padding: 10px;
 }
 
-#codigo { background-color: #e2f0cb; }
-#tokens { background-color: #e1e9ff; }
+#codigo { background-color: #9affa4; 
+        font: Times New Roman, serif;
+        font-size: 1.5rem;
+        font-style: bold;
+}
+#tokens { background-color: #6ab2ff; }
 
 /* 3. Botón: Ocupa las dos columnas abajo y se centra */
 #btn_scan {
@@ -90,17 +94,17 @@ section:last-of-type > div {
     padding: 10px 30px;
     border-radius: 20px;
     border: none;
-    background-color: #ffccf9;
-    color: #7d5a7a;
+    background-color: #82f4ae;
+    color: #181616;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 4px 0 #efbbe9;
+    box-shadow: 0 4px 0 #10a45a;
     transition: all 0.2s;
 }
 
 #btn_scan:hover {
     transform: translateY(-2px);
-    background-color: #ffb3f7;
+    background-color: #4df560;
 }
 
 
