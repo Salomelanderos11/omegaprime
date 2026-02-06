@@ -1,28 +1,31 @@
 const Tokens = [
-  // 1. Delimitadores de Programa (Tus terminales <? y ?>)
-  { tipo: 'INICIO_BLOQUE', regex: /^<\?/ },
-  { tipo: 'FIN_BLOQUE',    regex: /^\?>/ },
+  // 1. Delimitadores de Programa (Terminales de estructura)
+  { tipo: 'INICIO_PROG',    regex: /^<\?/ },
+  { tipo: 'FIN_PROG',       regex: /^\?>/ },
 
-  // 2. Palabras Reservadas (Terminales de control y flujo)
-  // Usamos \b para asegurar que coincida con la palabra completa
+  // 2. Palabras Reservadas (Terminales de control)
+  // Nota: \b asegura que coincida con la palabra completa y no con parte de otra
   { tipo: 'PALABRA_RESERVADA', regex: /^\b(programa|crear|mostrar|si|sino|mas|menos|por|entre|mayor|menor|igual)\b/ },
 
-  // 3. Símbolos de Puntuación y Agrupación
-  { tipo: 'IGUAL',         regex: /^=/ },
-  { tipo: 'PUNTO_COMA',    regex: /^;/ },
-  { tipo: 'PAR_IZQ',       regex: /^\(/ },
-  { tipo: 'PAR_DER',       regex: /^\)/ },
-  { tipo: 'LLAVE_IZQ',     regex: /^\{/ },
-  { tipo: 'LLAVE_DER',     regex: /^\}/ },
+  // 3. Símbolos y Operadores (Terminales de puntuación)
+  { tipo: 'IGUAL',          regex: /^=/ },
+  { tipo: 'PUNTO_COMA',     regex: /^;/ },
+  { tipo: 'PAR_IZQ',        regex: /^\(/ },
+  { tipo: 'PAR_DER',        regex: /^\)/ },
+  { tipo: 'LLAVE_IZQ',      regex: /^\{/ },
+  { tipo: 'LLAVE_DER',      regex: /^\}/ },
 
-  // 4. Literales (Reglas 19 y 20 de tu gramática)
-  { tipo: 'CADENA',        regex: /^"[a-zA-Z0-9]*"/ }, // "letra*"
-  { tipo: 'NUMERO',        regex: /^[0-9]+/ },         // digito+
+  // 4. Literales (Reglas 19 y 20 de la gramática)
+  // Cadena: cualquier secuencia alfanumérica entre comillas
+  { tipo: 'CADENA',         regex: /^"[a-zA-Z0-9]*"/ },
+  // Número: uno o más dígitos
+  { tipo: 'NUMERO',         regex: /^[0-9]+/ },
 
   // 5. Identificadores (Reglas 17 y 18)
-  { tipo: 'IDENTIFICADOR', regex: /^[a-zA-Z][a-zA-Z0-9]*/ },
+  // Debe empezar con letra, seguido de letras o dígitos
+  { tipo: 'IDENTIFICADOR',  regex: /^[a-zA-Z][a-zA-Z0-9]*/ },
 
-  // 6. Espacios en blanco (Para ignorar)
-  { tipo: 'ESPACIO',       regex: /^\s+/ },
+  // 6. Espacios en blanco (Para ser ignorados por el scanner)
+  { tipo: 'ESPACIO',        regex: /^\s+/ },
 ];
-export default tokens;
+export default Tokens;

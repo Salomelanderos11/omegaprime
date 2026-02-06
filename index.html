@@ -4,14 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMEGAPRIME</title>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
     <section>COMPILADOR OMEGAPRIME</section>
     <section>
         <div id="scanner">
             <div >SCANNER</div>
-            <div id="codigo"> nuevo</div>
-            <div id="tokens"></div>
+            <textarea id="codigo"></textarea>
+            <div id="tokens">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Token</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tokens-body">
+                    
+                    </tbody>
+                </table>
+            </div>
+            <button id="btn_scan">Ejecutar Scanner</button>
         </div>
         <div></div>
         <div></div>
