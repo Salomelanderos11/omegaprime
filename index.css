@@ -5,7 +5,7 @@ html, body {
     margin: 0;       /* Elimina el margen por defecto del navegador */
     padding: 0;
     box-sizing: border-box;
-    overflow-y: auto;
+    
 }
 
 body {
@@ -16,7 +16,7 @@ body {
     /* Usamos Flexbox en el body para organizar el título y el contenido */
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Evita el scroll si no es necesario */
+    overflow-y: auto; /* Evita el scroll si no es necesario */
 }
 
 /* --- Título (Section 1) --- */
@@ -31,12 +31,13 @@ section:first-of-type {
 
 /* --- Contenedor de Cuadrícula (Section 2) --- */
 section:last-of-type {
-    flex: 1; /* Ocupa todo el espacio restante de la pantalla */
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr; /* Divide el espacio sobrante en dos filas iguales */
-    gap: 10px;
-    padding: 0 20px 0px 20px; /* Margen interno para que no toque los bordes */
+    /* Elimina grid-template-rows fijo para que crezca según el contenido */
+    grid-template-rows: auto; 
+    gap: 20px;
+    padding: 20px;
     box-sizing: border-box;
 }
 
@@ -45,10 +46,9 @@ section:last-of-type > div {
     background-color: #ffffff;
     border: 2px solid #f0f0f0;
     border-radius: 15px;
-    /* padding: 15px; */
-    /* display: flex; */      /* Para organizar el contenido interno */
     flex-direction: column;
-    overflow: hidden;   /* Evita que el contenido se salga del cuadro */
+    overflow: visible; /* Permite que el contenido interno maneje su propio scroll */
+    min-height: 400px; /* Dale un tamaño mínimo para que no se colapsen */
 }
 
 /* --- Ajuste específico del Scanner para que no se desborde --- */
@@ -86,7 +86,7 @@ section:last-of-type > div {
         font: Times New Roman, serif;
         font-size: 1.5rem;
         font-style: bold;
-        padding: 10px;
+        padding: 0;
 }
 #tokens { background-color: #6ab2ff; 
         font: 'Courier New', monospace;
