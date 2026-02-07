@@ -5,6 +5,7 @@ html, body {
     margin: 0;       /* Elimina el margen por defecto del navegador */
     padding: 0;
     box-sizing: border-box;
+    overflow-y: auto;
 }
 
 body {
@@ -76,15 +77,23 @@ section:last-of-type > div {
     height: 100%; /* Se ajustan al espacio disponible */
     min-height: 150px; /* Evita que se vean muy pequeños */
     border-radius: 10px;
-    padding: 10px;
+    max-height: 490px;
+    overflow: auto;  /* Limita la altura máxima para evitar desbordes */
 }
 
-#codigo { background-color: #9affa4; 
+#codigo { 
+    background-color: #9affa4; 
         font: Times New Roman, serif;
         font-size: 1.5rem;
         font-style: bold;
+        padding: 10px;
 }
-#tokens { background-color: #6ab2ff; }
+#tokens { background-color: #6ab2ff; 
+        font: 'Courier New', monospace;
+        font-size: 1.2rem;
+        padding-left: 5px;
+        /* Agrega scroll vertical si el contenido es demasiado largo */
+}
 
 /* 3. Botón: Ocupa las dos columnas abajo y se centra */
 #btn_scan {
