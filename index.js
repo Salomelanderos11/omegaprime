@@ -1,7 +1,5 @@
 import Tokens from "./tokens.js";
 
-
-const codigo = document.getElementById("codigo").textContent;
 const tokensDiv = document.getElementById("tokens");
 const btnScan = document.getElementById("btn_scan");
 const tablaTokens = document.getElementById("tokens-body");
@@ -10,10 +8,9 @@ const tablaTokens = document.getElementById("tokens-body");
 btnScan.addEventListener("click", () => {
   const codigoFuente = document.getElementById("codigo").value;
   try {
-    console.log(escanear(codigoFuente));
-    const tokensEncontrados = escanear(codigoFuente).tokens;
-    tablaTokens.innerHTML = ""; // Limpiar la tabla antes de agregar nuevos tokens
-    tokensEncontrados.forEach(token => {
+    const tokensencontrados = escanear(codigoFuente).tokens;
+    tablaTokens.innerHTML = ""; // limpiar la tabla antes de agregar nuevos tokens
+    tokensencontrados.forEach(token => {
       const fila = document.createElement("tr");
       const celdaTipo = document.createElement("td");
       const celdaValor = document.createElement("td");
@@ -28,54 +25,66 @@ btnScan.addEventListener("click", () => {
   }
 });
 
-let codigo1= "soy el mero aberce";
-const cadenaRestante = codigo1.slice(0);
-console.log(cadenaRestante);
 function escanear(codigo) {
   let posicion = 0;
-  const tokensEncontrados = [];
-  const erroresEncontrados = [];
+  const tokensencontrados = [];
+  const errores = [];
 
   console.log("--- Iniciando Análisis Léxico ---");
 
   while (posicion < codigo.length) {
-    const cadenaRestante = codigo.slice(posicion);
-    let coincidenciaEncontrada = false;
+    const cadenarestante = codigo.slice(posicion);
+    let coincidencia = false;
 
     for (const { tipo, regex } of Tokens) {
-      const match = cadenaRestante.match(regex);
+      const match = cadenarestante.match(regex);
 
       if (match) {
         const valor = match[0];
 
+        //cadena sin cerrar
+        if (tipo === 'ERROR_CADENA') {
+          errores.push({
+            caracter: valor,
+            posicion: posicion,
+            mensaje: `Error Léxico: Se abrió una cadena con '"' pero nunca se cerró.`
+          });
+          // avanzar el puntero toda la longitud de la cadena incompplta
+          posicion += valor.length;
+          coincidencia = true;
+          break;
+        }
+
+        // si es un token valido y no es espacio lo guardamos
         if (tipo !== 'ESPACIO') {
-          tokensEncontrados.push({ tipo, valor });
+          tokensencontrados.push({ tipo, valor });
         }
         
         posicion += valor.length;
-        coincidenciaEncontrada = true;
+        coincidencia = true;
         break; 
       }
     }
 
-    if (!coincidenciaEncontrada) {
+    // caracteres no permitidos
+    if (!coincidencia) {
       const caracterIlegal = codigo[posicion];
       
-      erroresEncontrados.push({
+      errores.push({
         caracter: caracterIlegal,
         posicion: posicion,
-        mensaje: `Error Léxico: Carácter '${caracterIlegal}' no reconocido`
+        mensaje: `Error Léxico: Carácter '${caracterIlegal}' no reconocido en el lenguaje.`
       });
 
-      posicion++; 
+      posicion++; // Avanzamos uno para no quedar en bucle infinito
     }
   }
 
   console.log("--- Análisis Finalizado ---");
   
   return {
-    exito: erroresEncontrados.length === 0,
-    tokens: tokensEncontrados,
-    errores: erroresEncontrados
+    exito: errores.length === 0,
+    tokens: tokensencontrados,
+    errores: errores
   };
 }
