@@ -33,6 +33,7 @@ function programa(tokens) {
               if (tokens[posicion].tipo === 13) { // IGUAL
                 posicion++;
                 if (tokens[posicion].tipo === ) { // PA_RES 'programa'
+                  
     return true;
   }
   return false;

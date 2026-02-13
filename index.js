@@ -11,6 +11,7 @@ btnScan.addEventListener("click", () => {
   const codigoFuente = document.getElementById("codigo").value;
   try {
     const tokensencontrados = escanear(codigoFuente).tokens;
+    console.log(tokensencontrados);
     tablaTokens.innerHTML = ""; // limpiar la tabla antes de agregar nuevos tokens
     tokensencontrados.forEach(token => {
       const fila = document.createElement("tr");
@@ -19,7 +20,7 @@ btnScan.addEventListener("click", () => {
       const celdaValorLf = document.createElement("td");
       celdaTipo.textContent = token.tipo;
       celdaValor.textContent = token.valor;
-      celdaValorLf.textContent = token.valorLf;
+      celdaValorLf.textContent = token.LF;
       fila.appendChild(celdaTipo);
       fila.appendChild(celdaValor);
       fila.appendChild(celdaValorLf);
