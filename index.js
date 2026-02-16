@@ -23,6 +23,7 @@ btnScan.addEventListener("click", () => {
     // Mostrar tokens en la tabla
     tokensencontrados.forEach(token => {
       const fila = document.createElement("tr");
+      if(token.tipo =="ERROR_LEXICO") {fila.className = "errores"} 
       fila.innerHTML = `
         <td>${token.tipo}</td>
         <td>${token.valor}</td>

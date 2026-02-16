@@ -19,13 +19,19 @@ function escanear(codigo) {
 
         // 1. Caso: Cadena sin cerrar (Error detectado por Regex)
         if (tipo === 'ERROR_CADENA') {
-          errores.push({
+          const errorToken = {
             tipo,
             LF,
-            caracter: valor,
+            valor,
             posicion: posicion,
+            error: true,
             mensaje: `Error Léxico (${LF}): Se abrió comilla [ " ] pero no se encontró el cierre.`
-          });
+          };
+          
+          // Agregar tanto a tokens (para la tabla) como a errores (para validación)
+          tokensencontrados.push(errorToken);
+          errores.push(errorToken);
+          
           posicion += valor.length;
           coincidencia = true;
           break;
@@ -33,13 +39,19 @@ function escanear(codigo) {
 
         // 2. Caso: Carácter ilegal (Cualquier cosa que cayó en el '.' del final del array)
         if (tipo === 'ERROR_LEXICO') {
-          errores.push({
+          const errorToken = {
             tipo,
             LF,
-            caracter: valor,
+            valor,
             posicion: posicion,
+            error: true,
             mensaje: `Error Léxico (${LF}): Símbolo '${valor}' no permitido en el alfabeto del lenguaje.`
-          });
+          };
+          
+          // Agregar tanto a tokens (para la tabla) como a errores (para validación)
+          tokensencontrados.push(errorToken);
+          errores.push(errorToken);
+          
           posicion += valor.length;
           coincidencia = true;
           break;
@@ -65,13 +77,19 @@ function escanear(codigo) {
     // 4. Caso de Respaldo: Si nada en Tokens2 coincidió (Fallback de seguridad)
     if (!coincidencia) {
       const caracterIlegal = codigo[posicion];
-      errores.push({
+      const errorToken = {
         tipo: 'ERROR_DESCONOCIDO',
         LF: 38,
-        caracter: caracterIlegal,
+        valor: caracterIlegal,
         posicion: posicion,
+        error: true,
         mensaje: `Error Crítico: Carácter '${caracterIlegal}' fuera de control.`
-      });
+      };
+      
+      // Agregar tanto a tokens (para la tabla) como a errores (para validación)
+      tokensencontrados.push(errorToken);
+      errores.push(errorToken);
+      
       posicion++;
     }
   }

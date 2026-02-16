@@ -1,4 +1,3 @@
-// parser.js
 export default class Parser {
   constructor(tokens) {
     // Solo ignora espacios (LF 24). NO hay soporte de comentarios.
@@ -71,13 +70,30 @@ export default class Parser {
     // ---------- SUMA/RESTA (antes de 102→103) ----------
     if (this.matchLF([103, 6, 102])) return true;  // expresion + termino
     if (this.matchLF([103, 7, 102])) return true;  // expresion - termino
+    
+    // NUEVO: termino + termino (cuando ninguno se ha promocionado aún)
+    if (this.matchLF([102, 6, 102])) return true;  // termino + termino
+    if (this.matchLF([102, 7, 102])) return true;  // termino - termino
 
     // ---------- Promoción <termino> → <expresion> ----------
     if (this.matchLF([102])) {
       const a = this.pila[this.pila.length - 2]?.LF;
       const b = this.pila[this.pila.length - 3]?.LF;
       const haySumaIzq = (b === 103) && (a === 6 || a === 7);
-      if (!haySumaIzq && (SUMA.includes(sig) || ![...SUMA, ...MULT, ...REL].includes(sig))) {
+      
+      // CORRECCIÓN: Dentro de paréntesis de comparación, promover si viene operador relacional
+      const dentroParentesis = (a === 15); // Hay un '(' a la izquierda
+      
+      // NO promover si viene operador de suma/mult (necesita construir la expresión completa primero)
+      if ([...SUMA, ...MULT].includes(sig)) {
+        return false; // Esperar a desplazar el operador y el siguiente término
+      }
+      
+      // SÍ promover si:
+      // - Viene operador relacional
+      // - Está en paréntesis  
+      // - NO viene ningún operador binario
+      if (!haySumaIzq && (REL.includes(sig) || dentroParentesis || ![...SUMA, ...MULT, ...REL].includes(sig))) {
         return true;
       }
     }
@@ -104,11 +120,11 @@ export default class Parser {
     if (this.matchLF([110])) return true;     // condicional
 
     // ---------- ALTERNATIVA ----------
-    if (this.matchLF([5, 17, 106, 18])) return true; // sino { lista }
+    if (this.matchLF([5, 107])) return true; // sino <cuerpo>
 
     // ---------- CONDICIONAL (con y sin 'sino') ----------
-    if (this.matchLF([4, 15, 112, 16, 17, 106, 18, 111])) return true;         // si (...) { lista } alternativa
-    if (this.matchLF([4, 15, 112, 16, 17, 106, 18]) && sig !== 5) return true; // si (...) { lista } (sin 'sino' detrás)
+    if (this.matchLF([4, 15, 112, 16, 107, 111])) return true;         // si ( comparacion ) <cuerpo> alternativa
+    if (this.matchLF([4, 15, 112, 16, 107]) && sig !== 5) return true; // si ( comparacion ) <cuerpo> (sin 'sino' detrás)
 
     // ---------- LISTA DE SENTENCIAS ----------
     if (this.matchLF([106, 105])) return true; // <lista> <sentencia> → <lista>
@@ -119,7 +135,7 @@ export default class Parser {
 
     // ---------- CUERPO y PROGRAMA ----------
     if (this.matchLF([17, 106, 18])) return true;           // { lista } -> <cuerpo>
-    if (this.matchLF([1, 21, 19, 107, 20])) return true;    // programa ident <? <cuerpo> ?>
+    if (this.matchLF([1, 21, 19, 106, 20])) return true;    // programa ident <? <lista_sentencias> ?>
 
     return false;
   }
@@ -131,6 +147,7 @@ export default class Parser {
     const sig = this.verSiguiente().LF;
     const SUMA = [6, 7];
     const MULT = [8, 9];
+    const REL  = [10, 11, 12];
 
     // ----- <factor> -----
     // NUMERO
@@ -170,13 +187,34 @@ export default class Parser {
     if (this.matchLF([103, 7, 102])) {
       if (!MULT.includes(sig)) return this.aplicar('<expresion>', 3, 103);
     }
+    
+    // manejar termino + termino → expresion
+    if (this.matchLF([102, 6, 102])) {
+      if (!MULT.includes(sig)) return this.aplicar('<expresion>', 3, 103);
+    }
+    if (this.matchLF([102, 7, 102])) {
+      if (!MULT.includes(sig)) return this.aplicar('<expresion>', 3, 103);
+    }
 
     // ----- <expresion> desde <termino> -----
     if (this.matchLF([102])) {
       const a = this.pila[this.pila.length - 2]?.LF;
       const b = this.pila[this.pila.length - 3]?.LF;
       const haySumaIzq = (b === 103) && (a === 6 || a === 7);
-      if (!haySumaIzq && (SUMA.includes(sig) || ![...SUMA, ...MULT].includes(sig))) {
+      
+      // CORRECCIÓN: Dentro de paréntesis de comparación, promover si viene operador relacional
+      const dentroParentesis = (a === 15); // Hay un '(' a la izquierda
+      
+      // NO promover si viene operador de suma/mult (necesita construir la expresión completa primero)
+      if ([...SUMA, ...MULT].includes(sig)) {
+        return false; // Esperar a desplazar el operador y el siguiente término
+      }
+      
+      // SÍ promover si:
+      // - Viene operador relacional
+      // - Está en paréntesis
+      // - NO viene ningún operador binario
+      if (!haySumaIzq && (REL.includes(sig) || dentroParentesis || ![...SUMA, ...MULT, ...REL].includes(sig))) {
         return this.aplicar('<expresion>', 1, 103);
       }
     }
@@ -200,14 +238,14 @@ export default class Parser {
     if (this.matchLF([110]))      return this.aplicar('<sentencia>', 1, 105); // condicional
 
     // ----- <alternativa> -----
-    if (this.matchLF([5, 17, 106, 18])) return this.aplicar('<alternativa>', 4, 111); // sino { lista }
+    if (this.matchLF([5, 107])) return this.aplicar('<alternativa>', 2, 111); // sino <cuerpo>
 
     // ----- <condicional> (con y sin 'sino') -----
-    if (this.matchLF([4, 15, 112, 16, 17, 106, 18, 111])) {
-      return this.aplicar('<condicional>', 8, 110);
+    if (this.matchLF([4, 15, 112, 16, 107, 111])) {
+      return this.aplicar('<condicional>', 6, 110); // si ( comparacion ) <cuerpo> alternativa
     }
-    if (this.matchLF([4, 15, 112, 16, 17, 106, 18]) && this.verSiguiente().LF !== 5) {
-      return this.aplicar('<condicional>', 7, 110);
+    if (this.matchLF([4, 15, 112, 16, 107]) && this.verSiguiente().LF !== 5) {
+      return this.aplicar('<condicional>', 5, 110); // si ( comparacion ) <cuerpo> (sin 'sino')
     }
 
     // ----- <lista_sentencias> -----
@@ -228,7 +266,7 @@ export default class Parser {
     if (this.matchLF([17, 106, 18])) return this.aplicar('<cuerpo>', 3, 107);
 
     // ----- <programa> -----
-    if (this.matchLF([1, 21, 19, 107, 20])) return this.aplicar('<programa>', 5, 100);
+    if (this.matchLF([1, 21, 19, 106, 20])) return this.aplicar('<programa>', 5, 100);
 
     return false;
   }

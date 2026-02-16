@@ -150,3 +150,35 @@ table tbody tr:nth-child(even) {
 table tbody tr:hover {
     background-color: #f0f4ff;
 }
+
+/* ====================================================================
+   CORRECCIÓN: Estilo de errores con mayor especificidad
+   ==================================================================== */
+
+/* Aplicar a la fila completa con mayor especificidad */
+table tbody tr.errores {
+    background-color: #f76363 !important; /* Fondo rojo */
+    color: #181616 !important;
+    font-weight: bold !important;
+}
+
+/* Aplicar también a las celdas dentro de la fila de error */
+table tbody tr.errores td {
+    background-color: #f76363 !important; /* Fondo rojo */
+    color: #181616 !important;
+    font-weight: bold !important;
+}
+
+/* Sobrescribir el hover para filas de error */
+table tbody tr.errores:hover {
+    background-color: #ff8080 !important; /* Rojo más claro al hover */
+}
+
+/* Asegurar que las filas pares con error también se pinten */
+table tbody tr.errores:nth-child(even) {
+    background-color: #f76363 !important; /* Mismo rojo que las impares */
+}
+
+table tbody tr.errores:nth-child(even) td {
+    background-color: #f76363 !important;
+}
