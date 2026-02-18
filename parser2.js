@@ -1,4 +1,15 @@
+import Tokens2 from "./tokens.js"; 
+
+
+
+
 export default class Parser {
+
+  encontrarLF(lf){
+    for (const { tipo, regex, LF } of Tokens2){
+      if (LF == lf) return tipo ;
+    }
+  }
   constructor(tokens) {
     // Filtramos los espacios (LF 24) antes de empezar
     this.tokens = tokens.filter(t => t.LF !== 24);
@@ -20,7 +31,7 @@ export default class Parser {
       this.posicion++;
       return token;
     }
-    throw new Error(`Se esperaba LF ${tipoLF} pero se encontró '${token.valor}' (LF: ${token.LF})`);
+    throw new Error(`Se esperaba LF ${this.encontrarLF(tipoLF)} pero se encontró '${token.valor}' (LF: ${token.LF})`);
   }
 
   // Verifica si el token actual coincide sin lanzar error
