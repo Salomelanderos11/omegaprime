@@ -1,0 +1,184 @@
+/* --- Configuración de Pantalla Completa --- */
+html, body {
+    height: 100%;    /* Ocupa el 100% de la altura de la ventana */
+    width: 100%;     /* Ocupa el 100% del ancho */
+    margin: 0;       /* Elimina el margen por defecto del navegador */
+    padding: 0;
+    box-sizing: border-box;
+    
+}
+
+body {
+    background-color: #fdfcf0; /* Crema pastel */
+    color: #444b55;
+    font-family: 'Segoe UI', sans-serif;
+    
+    /* Usamos Flexbox en el body para organizar el título y el contenido */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Evita el scroll si no es necesario */
+}
+
+/* --- Título (Section 1) --- */
+section:first-of-type {
+    flex: 0 0 auto; /* No se estira, mantiene su tamaño */
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #7a81a8;
+    padding: 20px 0;
+}
+
+/* --- Contenedor de Cuadrícula (Section 2) --- */
+section:last-of-type {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* Elimina grid-template-rows fijo para que crezca según el contenido */
+    grid-template-rows: auto; 
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* --- Ajuste de los cuadros --- */
+section:last-of-type > div {
+    background-color: #ffffff;
+    border: 2px solid #f0f0f0;
+    border-radius: 15px;
+    flex-direction: column;
+    overflow: visible; /* Permite que el contenido interno maneje su propio scroll */
+    min-height: 400px; /* Dale un tamaño mínimo para que no se colapsen */
+}
+
+/* --- Ajuste específico del Scanner para que no se desborde --- */
+/* --- Corrección Definitiva del Scanner --- */
+#scanner {
+    display: grid !important; /* Cambiamos a Grid para control total */
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    grid-template-rows: auto 1fr auto; /* Fila 1: Título, Fila 2: Cuadros, Fila 3: Botón */
+    gap: 5px;
+    height: 100%; /* Para que use todo el espacio del cuadro blanco */
+}
+
+/* 1. Título: Ocupa las dos columnas arriba */
+#scanner > div:first-child {
+    grid-column: 1 / span 2; 
+    text-align: center;
+    font-weight: bold;
+    color: #ffb7b2;
+    border-bottom: 2px solid #fff5f5;
+    padding-bottom: 5px;
+    align-self: start;
+}
+
+/* 2. Cuadros: Se colocan uno en cada columna de la fila central */
+#codigo, #tokens {
+    height: 100%; /* Se ajustan al espacio disponible */
+    min-height: 150px; /* Evita que se vean muy pequeños */
+    border-radius: 10px;
+    max-height: 490px;
+    overflow: auto;  /* Limita la altura máxima para evitar desbordes */
+}
+
+#codigo { 
+    background-color: #9affa4; 
+        font: Times New Roman, serif;
+        font-size: 1.5rem;
+        font-style: bold;
+        padding: 0;
+}
+#tokens { background-color: #6ab2ff; 
+        font: 'Courier New', monospace;
+        font-size: 1.2rem;
+        padding-left: 5px;
+        /* Agrega scroll vertical si el contenido es demasiado largo */
+}
+
+/* 3. Botón: Ocupa las dos columnas abajo y se centra */
+#btn_scan {
+    grid-column: 1 / span 2;
+    justify-self: center; /* Centra el botón horizontalmente */
+    align-self: end;      /* Lo pega a la parte inferior */
+    padding: 10px 30px;
+    border-radius: 20px;
+    border: none;
+    background-color: #82f4ae;
+    color: #181616;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #10a45a;
+    transition: all 0.2s;
+}
+
+#btn_scan:hover {
+    transform: translateY(-2px);
+    background-color: #4df560;
+}
+
+
+/* --- Estilos para la Tabla de Tokens --- */
+table {
+    width: 100%;
+    border-collapse: collapse; /* Une los bordes para que se vea una sola línea */
+    margin-top: 10px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden; /* Para que los bordes redondeados funcionen */
+}
+
+/* Bordes y alineación de encabezados y celdas */
+table th, table td {
+    border: 1px solid #d1dbf7; /* Borde azul pastel suave */
+    padding: 10px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+/* Estilo para el encabezado (Header) */
+table thead {
+    background-color: #e1e9ff; /* Fondo azul pastel */
+    color: #5a6ea3;
+}
+
+/* Efecto cebra para las filas (opcional, mejora la lectura) */
+table tbody tr:nth-child(even) {
+    background-color: #f8faff;
+}
+
+/* Resaltado al pasar el mouse por encima */
+table tbody tr:hover {
+    background-color: #f0f4ff;
+}
+
+/* ====================================================================
+   CORRECCIÓN: Estilo de errores con mayor especificidad
+   ==================================================================== */
+
+/* Aplicar a la fila completa con mayor especificidad */
+table tbody tr.errores {
+    background-color: #f76363 !important; /* Fondo rojo */
+    color: #181616 !important;
+    font-weight: bold !important;
+}
+
+/* Aplicar también a las celdas dentro de la fila de error */
+table tbody tr.errores td {
+    background-color: #f76363 !important; /* Fondo rojo */
+    color: #181616 !important;
+    font-weight: bold !important;
+}
+
+/* Sobrescribir el hover para filas de error */
+table tbody tr.errores:hover {
+    background-color: #ff8080 !important; /* Rojo más claro al hover */
+}
+
+/* Asegurar que las filas pares con error también se pinten */
+table tbody tr.errores:nth-child(even) {
+    background-color: #f76363 !important; /* Mismo rojo que las impares */
+}
+
+table tbody tr.errores:nth-child(even) td {
+    background-color: #f76363 !important;
+}

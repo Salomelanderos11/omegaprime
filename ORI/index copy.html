@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMEGAPRIME</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <section>COMPILADOR OMEGAPRIME</section>
+    <section>
+        <div id="scanner">
+            <div >SCANNER</div>
+            <textarea id="codigo">programa miApp <? { crear x = 10; si (x mayor 5) { { mostrar(x); } } } ?></textarea>
+            <div id="tokens">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Token</th>
+                            <th>Valor</th>
+                            <th>Valor LF</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tokens-body">
+                    
+                    </tbody>
+                </table>
+            </div>
+            <button id="btn_scan">Ejecutar Scanner</button>
+        </div>
+        <div></div>
+        <div></div>
+        <div></div>
+        
+    </section>
+</body>
+<script type="module" src="index2.js"></script>
+
+</html>
