@@ -4,38 +4,44 @@ export default class AnalizadorSemantico {
         this.tabla = {};
         this.errores = [];
     }
+
+
+    validacion(){
+        this.tabla = {};
+        this.recorrer(this.arbol);
+        console.log(this.tabla);
+    }
+
     recorrer(nodo){
         if (!nodo){return }
-        this.tiponodo=nodo.tipo;
-
-        if(nodo.hijos.length > 0){
-            nodo.hijos.forEach(nodohijo => {
-                recorrer(nodohijo);
-            });
-        }
-
-        if (nodo.tipo == '<declaracion>'){
-            let nombre, valor, tipo;
-            
-            nodo.hijos.forEach(hijo => {
-                if (hijo.tipo == '<identificador>'){
-                    nombre= hijo.valor   
-                }
+        let tiponodo=nodo.tipo;
+        console.log(tiponodo);
+        if (tiponodo == "<declaracion>"){
+            let nombre = nodo.hijos[2].valor;
+            let tipo = nodo.hijos[1].valor;
+            let valor ;
+            if (nodo.hijos[3].hijos && nodo.hijos[3].hijos.length > 0){
                 
-
+            }
+            if (this.tabla[nombre]){
+                this.errores.push(`Error semántico: variable ${nombre} ya declarada`);
+            }
+            else{
+            this.tabla[nombre] = { tipo: tipo, valor: null };
+            }
+        }
+        if(nodo.hijos && nodo.hijos.length > 0){
+            nodo.hijos.forEach(element => {
+                this.recorrer(element);
             });
-        
-            this.tabla[nombre] = { tipo: "NUMERO", valor: "25" };
-
         }
+        
+        
         
         
 
     }
-    validadortipo(){
-        if (hijo.LF == 21 || hijo.LF == 22 || hijo.LF == 36){
 
-        }
             
-    }
+    
 }

@@ -1,5 +1,6 @@
 import escanear from "./scanner.js";
 import Parser from "./parser.js"; 
+import AnalizadorSemantico from "./semantico.js";
 
 const btnScan = document.getElementById("btn_scan");
 const tablaTokens = document.getElementById("tokens-body");
@@ -40,6 +41,10 @@ btnScan.addEventListener("click", () => {
       // Mensaje en consola con el árbol
       console.log("%c🌳 ÁRBOL SINTÁCTICO GENERADO:", "color: #0984e3; font-weight: bold;", resultadoSintactico.arbol);
       
+      // --- PASO 3: ANÁLISIS SEMÁNTICO ---
+      const semantico = new AnalizadorSemantico(resultadoSintactico.arbol);
+      semantico.validacion();
+
       // Actualización de la interfaz
       if(mensajeSintactico) {
         mensajeSintactico.style.color = "#2ecc71";
