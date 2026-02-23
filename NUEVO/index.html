@@ -9,40 +9,81 @@
 <body>
     <section>COMPILADOR OMEGAPRIME</section>
     <section>
-        <div id="scanner">
-                <div >SCANNER</div>
-                <textarea id="codigo">programa miApp <?  crear int x = 10; si (x mayor 5) {  mostrar(x); }  ?></textarea>
-                <div id="tokens">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Tipo de Token</th>
-                                <th>Valor</th>
-                                <th>Valor LF</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tokens-body">
-                    
-                        </tbody>
-                    </table>
-                </div>
-                <div id="btn-container">
-                    <button id="btn_scan">Ejecutar Scanner</button>
-                    <button id="btn_azul">Nuevo Botón</button>
-                </div>
+    <div id="scanner" class="grid-container">
+        <div class="grid-title">Scanner</div>
+        
+        <textarea id="codigo">programa miApp <? crear int x = 10; si (x mayor 5) { mostrar(x);
+mostrar(n);
+crear int b= 0;
+crear String b;
+crear int c= 1 mas 2;
+
+ } ?></textarea>
+        
+        <div id="tokens">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo de Token</th>
+                        <th>Valor</th>
+                        <th>Valor LF</th>
+                    </tr>
+                </thead>
+                <tbody id="tokens-body"></tbody>
+            </table>
         </div>
-        <div style="display: flex;">
-            <div>asd</div>
-            <div id="btn-container">
-                <button id="btn_scan">Ejecutar Scanner</button>
-                <button id="btn_azul">Nuevo Botón</button>
+
+        <div id="btn-container">
+            <button id="btn_scan">Ejecutar Scanner</button>
+            <button id="btn_azul"  class= "btn_azul" >Perser</button>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="grid-title">Panel de Control</div>
+        
+        <div class="full-width-content">
+            <div>
+                <h4 style="text-align: center; color: #7a81a8;">Tabla de Símbolos</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Símbolo</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Dirección (Offset)</th> </tr>
+                    </thead>
+                    <tbody id="simbolos-body"></tbody> 
+                </table>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <h4 style="text-align: center; color: #f76363;">Errores Semánticos</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Error #</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="errores-semanticos-body"></tbody>
+                </table>
             </div>
         </div>
 
-        <div></div>
-        <div></div>
-        
-    </section>
+        <div id="btn-container">
+            <button id="btn_seman" class= "btn_azul">Ejecutar Semantico</button>
+            
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="grid-title">Salida / Consola</div>
+    </div>
+    <div class="grid-container">
+        <div class="grid-title">Errores Semánticos</div>
+    </div>
+</section>
 </body>
 <script type="module" src="index.js"></script>
 

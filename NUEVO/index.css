@@ -95,18 +95,50 @@ section:last-of-type > div {
         /* Agrega scroll vertical si el contenido es demasiado largo */
 }
 
-/* 3. Botón: Ocupa las dos columnas abajo y se centra */
-#btn-container {
-    grid-column: 1 / span 2; /* Ocupa las dos columnas del scanner */
-    display: flex;           /* Alinea los botones en fila */
-    justify-content: center; /* Los centra horizontalmente */
-    gap: 15px;               /* Espacio entre los botones */
-    align-self: end;         /* Los pega a la parte inferior */
-    padding-bottom: 10px;
+/* --- Clase genérica para los contenedores blancos --- */
+.grid-container {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto; /* Título, Contenido, Botones */
+    gap: 10px;
+    height: 100%;
+    padding: 15px; /* Espacio interno para que no pegue a los bordes */
+    box-sizing: border-box;
 }
 
+/* Títulos internos */
+.grid-title {
+    grid-column: 1 / span 2; 
+    text-align: center;
+    font-weight: bold;
+    color: #7a81a8;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 5px;
+    align-self: start;
+    text-transform: uppercase;
+}
+
+/* Ajuste del contenedor de botones para que ocupe el ancho total abajo */
+#btn-container {
+    grid-column: 1 / span 2;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    align-self: end;
+    padding-top: 10px;
+}
+
+/* Estilo para áreas de contenido genéricas (como el "asd" o cuadros vacíos) */
+.full-width-content {
+    grid-column: 1 / span 2;
+    background: #f9f9f9;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+
 /* --- Botón Azul (Nuevo) --- */
-#btn_azul {
+.btn_azul {
     padding: 10px 30px;
     border-radius: 20px;
     border: none;
@@ -118,7 +150,7 @@ section:last-of-type > div {
     transition: all 0.2s;
 }
 
-#btn_azul:hover {
+.btn_azul:hover {
     transform: translateY(-2px);
     background-color: #4da3ff;
 }
@@ -208,3 +240,4 @@ table tbody tr.errores:nth-child(even) {
 table tbody tr.errores:nth-child(even) td {
     background-color: #f76363 !important;
 }
+

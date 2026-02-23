@@ -1,122 +1,143 @@
-export default class AnalizadorSemantico {
-    constructor (arbol){
+export default class analizadorsemantico {
+    constructor(arbol) {
         this.arbol = arbol;
-        this.tabla = {};
+        this.tabla = []; // array para los simbolos
         this.errores = [];
+        this.contadorme = 0; // contador para direcciones de memoria
+
+        //tamaños de tipo variable 
+        this.tamaños = {
+            "int": 4,
+            "float": 8,
+            "String": 2 
+        };
     }
-
-
-    validacion(){
-        this.tabla = {};
+    //funcion principal que activa el analisis
+    validacion() {
+        this.tabla = [];
+        this.errores = [];
+        this.contadorme = 0;
         this.recorrer(this.arbol);
-        console.log(this.tabla);
+        console.log("tabla de simbolos final:", this.tabla);
     }
+    //funcion para pasar por cad nodo del arbol sintactico que da el parser
+    recorrer(nodo) {
+        if (!nodo) return;
+        let tiponodo = nodo.tipo;
 
-    recorrer(nodo){
-        if (!nodo){return }
-        let tiponodo=nodo.tipo;
-        //console.log(tiponodo);
-        //verificar si la variable adeclarar ya esta declarada  
-        if (tiponodo == "<declaracion>") {
-            let nombrevariable = nodo.hijos[2].valor;
-            let tipo = nodo.hijos[1].valor;
-            let valor = 0; // Inicializar como null por defecto
+        // --- deteccion del nombre del programa ---
+        if (tiponodo == "<programa>") {
+            let nombreapp = nodo.hijos[1].valor;
+            console.log("%cnombre del programa detectado: " + nombreapp, "color: #3498db; font-weight: bold;");
             
-            // Verificamos si hay una asignación (= ...)
+            this.tabla.push({
+                nombre: nombreapp,
+                tipo: "PROGRAMA",
+                valor: "0",
+                direccion: "----"
+            });
+        }
+
+        // --- declaraciones de variables ---
+        if (tiponodo == "<declaracion>") {
+            let nombrevar = nodo.hijos[2].valor;
+            let tipo = nodo.hijos[1].valor;
+            let valor = 0;
+
             if (nodo.hijos[3] && nodo.hijos[3].hijos && nodo.hijos[3].hijos.length > 1) {
-                // Ruta segura al valor:
-                // hijos[3] es <opc_asig> -> el hijo [1] es <expresion>
                 let expresion = nodo.hijos[3].hijos[1];
-                
-                // <expresion> hijo [0] es <termino>
                 let termino = expresion.hijos[0];
-                
-                // <termino> hijo [0] es <factor>
                 let factor = termino.hijos[0];
-                
-                // <factor> hijo [0] es el TOKEN final (el número 10)
-                //let tokenFinal = factor.valor;
-                
+
                 if (factor) {
-                    if(tipo == "int" || tipo == "float"){
-                        if (factor.tipo=="CADENA"){
-                            this.errores.push(`Error: Valor incorrecto para para el tipo de variable (IDENT : '${nombrevariable}´', Valor : '${factor.valor}). `)
-                        }
-                    }else{
-                        if (factor.tipo=="NUMERO"){
-                            this.errores.push(`Error: Valor incorrecto para para el tipo de variable (IDENT : '${nombrevariable}', Valor : '${factor.valor}'). `)
-                        }
-
+                    let expresionp = expresion.hijos[1];
+                    if (expresionp && expresionp.hijos && expresionp.hijos.length > 0) {
+                        valor = 0;
+                    } else {
+                        valor = factor.valor;
                     }
-                    
-                    valor = factor.valor;
 
+                    // validacion de tipos
+                    if (tipo == "int" || tipo == "float") {
+                        if (factor.tipo == "CADENA") {
+                            this.errores.push(`error: no se puede asignar CADENA a '${nombrevar}' (${tipo})`);
+                        }
+                    } else if (tipo == "String" && factor.tipo == "NUMERO") {
+                        this.errores.push(`error: no se puede asignar NUMERO a '${nombrevar}' (String)`);
+                    }
                 }
             }
+            //verificar si existe en la tabla
+            let existe = this.tabla.find(simbolo => simbolo.nombre === nombrevar);
 
-            if (this.tabla[nombrevariable]) {
-                this.errores.push(`Error semántico: variable ${nombrevariable} ya declarada`);
+            if (existe) {
+                this.errores.push(`error semantico: la variable '${nombrevar}' ya ha sido declarada.`);
             } else {
-                // Guardamos el valor capturado (si no hubo asignación, será null)
-                this.tabla[nombrevariable] = { tipo: tipo, valor: valor };
+                // direcciones de memoria 
+                    let direccionasig = this.contadorme; 
+                    let bytes = this.tamaños[tipo] || 1; 
+
+                    this.tabla.push({
+                        nombre: nombrevar,
+                        tipo: tipo,
+                        valor: valor,
+                        direccion: direccionasig 
+                    });
+
+                    this.contadorme += bytes;
             }
         }
 
+        // ---verificacion de que las variables ya estan declaradas antes de usarse en las expresiones ---
         if (tiponodo == "<expresion>") {
             if (nodo.hijos && nodo.hijos[0] && nodo.hijos[0].hijos) {
-                let candidato = nodo.hijos[0].hijos[0]; // Captura IDENT o NUMERO
+                let candidato = nodo.hijos[0].hijos[0];
                 if (candidato.tipo == "IDENT") {
-                    let nombrevariable = candidato.valor;
-                    
-                    // DEPURACIÓN: Ver qué hay en la tabla en este instante
-                   // console.log(`Buscando '${nombrevariable}' en tabla:`, Object.keys(this.tabla));
-
-                    if (!this.tabla[nombrevariable]) {
-                        this.errores.push(`Error semántico: la variable '${nombrevariable}' no ha sido declarada.`);
-                    } else {
-                        console.log("Variable encontrada con éxito.");
+                    let nombrevar = candidato.valor;
+                    let encontrado = this.tabla.find(simbolo => simbolo.nombre === nombrevar);
+                    if (!encontrado) {
+                        this.errores.push(`error semantico: la variable '${nombrevar}' no ha sido declarada.`);
                     }
                 }
             }
         }
 
+        // --- validacion de asignaciones.verificar si una variable a la que se le esta asignando un valor ya fue declarada
+        // que el tipo de valor que se le asigna sea correcto  ---
         if (tiponodo == "<asignacion>") {
-            let nombrevariable = nodo.hijos[0].valor;
-            
-            // 1. ¿La variable existe en la tabla?
-            if (!this.tabla[nombrevariable]) {
-                this.errores.push(`Error semántico: la variable '${nombrevariable}' no ha sido declarada.`);
-            } else {
-                let tipoOriginal = this.tabla[nombrevariable].tipo;
-                
-                // 2. Navegamos al valor (hijo 2 es <expresion>)
-                let expresion = nodo.hijos[2];
-                let tokenNuevo = expresion.hijos[0].hijos[0]; // termino -> valor/ident
+            let nombrevar = nodo.hijos[0].valor;
+            let simboloexistente = this.tabla.find(simbolo => simbolo.nombre === nombrevar);
 
-                if (tokenNuevo) {
-                    // 3. Chequeo de tipos
-                    if ((tipoOriginal == "int" || tipoOriginal == "float") && tokenNuevo.tipo == "CADENA") {
-                        this.errores.push(`Error de tipo: La variable '${nombrevariable}' es ${tipoOriginal} y no acepta cadenas.`);
-                    } else if (tipoOriginal == "String" && tokenNuevo.tipo == "NUMERO") {
-                        this.errores.push(`Error de tipo: La variable '${nombrevariable}' es String y no acepta números.`);
+            if (!simboloexistente) {
+                this.errores.push(`error semantico: la variable '${nombrevar}' no ha sido declarada.`);
+            } else {
+                let tipooriginal = simboloexistente.tipo;
+                let expresion = nodo.hijos[2];
+                let tokennuevo = expresion.hijos[0].hijos[0];
+
+                if (tokennuevo) {
+                    let expresionpasig = expresion.hijos[1];
+
+                    if ((tipooriginal == "int" || tipooriginal == "float") && tokennuevo.tipo == "CADENA") {
+                        this.errores.push(`error de tipo: '${nombrevar}' (${tipooriginal}) no acepta cadenas.`);
+                    } else if (tipooriginal == "String" && tokennuevo.tipo == "NUMERO") {
+                        this.errores.push(`error de tipo: '${nombrevar}' (String) no acepta numeros.`);
                     } else {
-                        // 4. Actualización exitosa
-                        this.tabla[nombrevariable].valor = tokenNuevo.valor;
+                        if (expresionpasig && expresionpasig.hijos && expresionpasig.hijos.length > 0) {
+                            simboloexistente.valor = 0;
+                        } else {
+                            simboloexistente.valor = tokennuevo.valor;
+                        }
                     }
                 }
             }
         }
 
-
-
-        if(nodo.hijos && nodo.hijos.length > 0){
+        // recorrido recursivo 
+        if (nodo.hijos && nodo.hijos.length > 0) {
             nodo.hijos.forEach(element => {
                 this.recorrer(element);
             });
         }
-
-
     }
-
-
 }
