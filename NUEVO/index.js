@@ -3,10 +3,13 @@ import Parser from "./parser.js";
 import AnalizadorSemantico from "./semantico.js";
 
 const btnScan = document.getElementById("btn_scan");
+const btn_parser = document.getElementById("btn_azul");
 const tablaTokens = document.getElementById("tokens-body");
 const mensajeSintactico = document.getElementById("mensaje-sintactico"); 
-
-btnScan.addEventListener("click", () => {
+let resultadoLexico;
+let resultadoSintactico;
+let semantico;
+btnScan.addEventListener("click", function () {
   const codigoFuente = document.getElementById("codigo").value;
   
   try {
@@ -15,16 +18,24 @@ btnScan.addEventListener("click", () => {
     if(mensajeSintactico) mensajeSintactico.textContent = "";
 
     // --- PASO 1: ANÁLISIS LÉXICO (SCANNER) ---
-    const resultadoLexico = escanear(codigoFuente);
+    resultadoLexico = escanear(codigoFuente);
     
     resultadoLexico.tokens.forEach(token => {
       const fila = document.createElement("tr");
       if (token.error) fila.style.backgroundColor = "#ff7675";
-      fila.innerHTML = `
-        <td>${token.tipo}</td>
-        <td>${token.valor}</td>
-        <td>${token.LF}</td>
-      `;
+
+      const celdaTipo = document.createElement("td");
+      celdaTipo.textContent = token.tipo;
+
+      const celdaValor = document.createElement("td");
+      celdaValor.textContent = token.valor;
+
+      const celdaLF = document.createElement("td");
+      celdaLF.textContent = token.LF;
+
+      fila.appendChild(celdaTipo);
+      fila.appendChild(celdaValor);
+      fila.appendChild(celdaLF);
       tablaTokens.appendChild(fila);
     });
 
@@ -33,17 +44,30 @@ btnScan.addEventListener("click", () => {
       return;
     }
 
-    // --- PASO 2: ANÁLISIS SINTÁCTICO (PARSER) ---
+
+  } 
+  catch (error) {
+    console.error("⚠️ Error Crítico:", error);
+    alert("Error inesperado: " + error.message);
+  }
+
+});
+
+
+
+btn_parser.addEventListener("click",function(){
+  try {
     const miParser = new Parser(resultadoLexico.tokens);
-    const resultadoSintactico = miParser.analizar();
+    resultadoSintactico = miParser.analizar();
 
     if (resultadoSintactico.exito) {
       // Mensaje en consola con el árbol
       console.log("%c🌳 ÁRBOL SINTÁCTICO GENERADO:", "color: #0984e3; font-weight: bold;", resultadoSintactico.arbol);
       
       // --- PASO 3: ANÁLISIS SEMÁNTICO ---
-      const semantico = new AnalizadorSemantico(resultadoSintactico.arbol);
+      semantico = new AnalizadorSemantico(resultadoSintactico.arbol);
       semantico.validacion();
+      
 
       // Actualización de la interfaz
       if(mensajeSintactico) {
@@ -67,9 +91,13 @@ btnScan.addEventListener("click", () => {
       }
       alert("❌ Error Sintáctico: " + resultadoSintactico.errores[0]);
     }
-
   } catch (error) {
-    console.error("⚠️ Error Crítico:", error);
-    alert("Error inesperado: " + error.message);
+    console.log(error);
+    
   }
-});
+
+});  
+
+
+
+

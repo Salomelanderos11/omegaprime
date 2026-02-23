@@ -96,10 +96,36 @@ section:last-of-type > div {
 }
 
 /* 3. Botón: Ocupa las dos columnas abajo y se centra */
+#btn-container {
+    grid-column: 1 / span 2; /* Ocupa las dos columnas del scanner */
+    display: flex;           /* Alinea los botones en fila */
+    justify-content: center; /* Los centra horizontalmente */
+    gap: 15px;               /* Espacio entre los botones */
+    align-self: end;         /* Los pega a la parte inferior */
+    padding-bottom: 10px;
+}
+
+/* --- Botón Azul (Nuevo) --- */
+#btn_azul {
+    padding: 10px 30px;
+    border-radius: 20px;
+    border: none;
+    background-color: #6ab2ff; /* Azul pastel */
+    color: #ffffff;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #4a86cc; /* Sombra más oscura del azul */
+    transition: all 0.2s;
+}
+
+#btn_azul:hover {
+    transform: translateY(-2px);
+    background-color: #4da3ff;
+}
+
+/* --- Ajuste al botón original (eliminamos el centrado individual) --- */
 #btn_scan {
-    grid-column: 1 / span 2;
-    justify-self: center; /* Centra el botón horizontalmente */
-    align-self: end;      /* Lo pega a la parte inferior */
+    /* Quitamos el grid-column y justify-self porque ahora los maneja el contenedor */
     padding: 10px 30px;
     border-radius: 20px;
     border: none;
