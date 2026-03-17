@@ -1,12 +1,15 @@
 import escanear from "./scanner.js";
 import Parser from "./parser.js"; 
 import AnalizadorSemantico from "./semantico.js";
+import Traductor from "./traductor.js";
 
 const btnScan = document.getElementById("btn_scan");
 const btn_parser = document.getElementById("btn_azul");
 const tablaTokens = document.getElementById("tokens-body");
 const mensajeSintactico = document.getElementById("mensaje-sintactico"); 
 const btn_seman = document.getElementById("btn_seman");
+const btnTac = document.getElementById("btn_tac");
+const consolaSalida = document.getElementById("consola-salida");
 let resultadoLexico;
 let resultadoSintactico;
 let semantico;
@@ -163,6 +166,37 @@ btn_seman.addEventListener("click", function() {
     }
 });
 
+btnTac.addEventListener("click", function() {
+    if (!semantico || semantico.errores.length > 0) {
+        alert("⚠️ Primero debes ejecutar el Análisis Semántico sin errores.");
+        return;
+    }
+
+    try {
+        consolaSalida.innerHTML = "";
+
+        const miTraductor = new Traductor(resultadoSintactico.arbol, semantico.tabla);
+        const { tac, asm } = miTraductor.traducir();
+
+        if (asm.length === 0) {
+            consolaSalida.innerHTML = "// No se generó código.";
+            return;
+        }
+
+        consolaSalida.innerHTML = asm.map(escapeHtml).join("\n");
+
+        console.log("%c🚀 TAC", "color: #9b59b6; font-weight: bold;", tac);
+        alert("✅ Ensamblador generado con éxito.");
+
+    } catch (error) {
+        console.error("Error en la generación de código:", error);
+        alert("❌ Hubo un fallo en la traducción: " + error.message);
+    }
+});
+
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 
 

@@ -12,13 +12,32 @@
     <div id="scanner" class="grid-container">
         <div class="grid-title">Scanner</div>
         
-        <textarea id="codigo">programa miApp <? crear int x = 10; si (x mayor 5) { mostrar(x);
-mostrar(n);
-crear int b= 0;
-crear String b;
-crear int c= 1 mas 2;
+        <textarea id="codigo">programa EvaluacionProfunda <?
+crear int base = 10;
+crear int altura = 5;
+crear int area = (base por altura) entre 2;
+crear String inicio = "Calculando...";
 
- } ?></textarea>
+mostrar(inicio);
+mostrar(area);
+
+si (area mayor 20) {
+    mostrar("Area grande");
+    crear int doble = area por 2;
+    
+    si (doble igual 50) {
+        mostrar("El doble es 50");
+    } sino {
+        mostrar("Doble distinto de 50");
+    }
+} sino {
+    mostrar("Area pequena");
+    area = area mas 100;
+}
+
+crear int opCompleja = (base mas 5) por (altura menos 2) mas area;
+mostrar(opCompleja);
+?></textarea>
         
         <div id="tokens">
             <table>
@@ -78,7 +97,25 @@ crear int c= 1 mas 2;
     </div>
 
     <div class="grid-container">
-        <div class="grid-title">Salida / Consola</div>
+        <div class="grid-title">Código Intermedio (TAC)</div>
+        
+        <pre id="consola-salida" style="
+    background: #ffffff; 
+    color: #000000; 
+    font-size: large;
+    font-style: bold;
+    padding: 15px; 
+    border-radius: 5px; 
+    overflow-y: auto; 
+    max-height: 300px; 
+    font-family: 'Courier New', Courier, monospace;
+    grid-column: 1 / -1;
+    width: 100%;
+    box-sizing: border-box;
+">  </pre>
+        <div id="btn-container" style="margin-bottom: 10px;">
+            <button id="btn_tac" class="btn_azul">Generar Código Intermedio</button>
+        </div>
     </div>
     <div class="grid-container">
         <div class="grid-title">Errores Semánticos</div>
