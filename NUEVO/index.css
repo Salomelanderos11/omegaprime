@@ -105,7 +105,11 @@ section:last-of-type > div {
     padding: 15px; /* Espacio interno para que no pegue a los bordes */
     box-sizing: border-box;
 }
-
+.grid-container pre {
+    grid-column: 1 / span 2; /* Ocupa desde la columna 1 hasta la 2 */
+    width: 100%;
+    box-sizing: border-box;
+}
 /* Títulos internos */
 .grid-title {
     grid-column: 1 / span 2; 

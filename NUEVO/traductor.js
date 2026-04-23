@@ -1,48 +1,48 @@
-export default class Traductor {
+export default class traductor {
     constructor(arbol, tabla) {
         this.arbol = arbol;
         this.tabla = tabla;
 
-        this.codigoIntermedio = [];
-        this.errores          = [];
-        this.contadorTemporales = 0;
-        this.contadorEtiquetas  = 0;
+        this.codigo_intermedio   = [];
+        this.errores             = [];
+        this.contador_temporales = 0;
+        this.contador_etiquetas  = 0;
 
-        this.codigoAsm       = [];
-        this.variablesMasm   = [];
-        this.temporalesMasm  = {};
+        this.codigo_asm      = [];
+        this.variables_masm  = [];
+        this.temporales_masm = {};
         this.strings         = [];
-        this.contadorStrings = 0;
+        this.contador_strings = 0;
     }
 
     // apoyo tac
-    nuevoTemporal() { return `t${this.contadorTemporales++}`; }
-    nuevaEtiqueta() { return `L${this.contadorEtiquetas++}`; }
-    emitir(i)       { this.codigoIntermedio.push(i); }
+    nuevo_temporal() { return `t${this.contador_temporales++}`; }
+    nueva_etiqueta() { return `L${this.contador_etiquetas++}`; }
+    emitir(i)        { this.codigo_intermedio.push(i); }
 
-    resolverOperacionContinua(valIzq, nodoP) {
-        if (!nodoP) return valIzq;
-        if (nodoP.valor === 'e' || nodoP.valor === 'ε') return valIzq;
-        if (!nodoP.hijos || nodoP.hijos.length === 0) return valIzq;
-        const opToken = nodoP.hijos[0];
-        if (!opToken || opToken.LF === undefined) return valIzq;
-        const valDer = this.recorrer(nodoP.hijos[1]);
-        const temp   = this.nuevoTemporal();
+    resolver_operacion(val_izq, nodo_p) {
+        if (!nodo_p) return val_izq;
+        if (nodo_p.valor === 'e' || nodo_p.valor === 'ε') return val_izq;
+        if (!nodo_p.hijos || nodo_p.hijos.length === 0) return val_izq;
+        const op_token = nodo_p.hijos[0];
+        if (!op_token || op_token.LF === undefined) return val_izq;
+        const val_der = this.recorrer(nodo_p.hijos[1]);
+        const temp    = this.nuevo_temporal();
         let op = '';
-        if (opToken.LF === 6) op = '+';
-        else if (opToken.LF === 7) op = '-';
-        else if (opToken.LF === 8) op = '*';
-        else if (opToken.LF === 9) op = '/';
-        this.emitir(`${temp} = ${valIzq} ${op} ${valDer}`);
-        return this.resolverOperacionContinua(temp, nodoP.hijos[2]);
+        if (op_token.LF === 6) op = '+';
+        else if (op_token.LF === 7) op = '-';
+        else if (op_token.LF === 8) op = '*';
+        else if (op_token.LF === 9) op = '/';
+        this.emitir(`${temp} = ${val_izq} ${op} ${val_der}`);
+        return this.resolver_operacion(temp, nodo_p.hijos[2]);
     }
 
     // metodo principal
     traducir() {
         this.recorrer(this.arbol);
-        this._construirMapaVariables();
-        this._generarMasm();
-        return { tac: this.codigoIntermedio, asm: this.codigoAsm };
+        this.construir_mapa();
+        this.generar_masm();
+        return { tac: this.codigo_intermedio, asm: this.codigo_asm };
     }
 
     // recorrido ast -> tac
@@ -64,15 +64,15 @@ export default class Traductor {
             return this.recorrer(nodo.hijos[t === '<cuerpo>' ? 1 : 0]);
         }
         else if (t === '<declaracion>') {
-            const tipoVar   = nodo.hijos[1].valor;
-            const nombreVar = nodo.hijos[2].valor;
-            const opcAsig   = nodo.hijos[3];
-            if (opcAsig.valor !== 'e' && opcAsig.valor !== 'ε' && opcAsig.hijos && opcAsig.hijos.length > 0) {
-                const res = this.recorrer(opcAsig.hijos[1]);
-                this.emitir(`${nombreVar} = ${res}`);
+            const tipo_var   = nodo.hijos[1].valor;
+            const nombre_var = nodo.hijos[2].valor;
+            const opc_asig   = nodo.hijos[3];
+            if (opc_asig.valor !== 'e' && opc_asig.valor !== 'ε' && opc_asig.hijos && opc_asig.hijos.length > 0) {
+                const res = this.recorrer(opc_asig.hijos[1]);
+                this.emitir(`${nombre_var} = ${res}`);
             } else {
-                const def = tipoVar === 'String' ? '""' : '0';
-                this.emitir(`${nombreVar} = ${def}`);
+                const def = tipo_var === 'String' ? '""' : '0';
+                this.emitir(`${nombre_var} = ${def}`);
             }
         }
         else if (t === '<asignacion>') {
@@ -85,7 +85,7 @@ export default class Traductor {
         }
         else if (t === '<expresion>' || t === '<termino>') {
             const izq = this.recorrer(nodo.hijos[0]);
-            return this.resolverOperacionContinua(izq, nodo.hijos[1]);
+            return this.resolver_operacion(izq, nodo.hijos[1]);
         }
         else if (t === '<factor>') {
             return this.recorrer(nodo.hijos[0]);
@@ -96,314 +96,314 @@ export default class Traductor {
             const alt    = nodo.hijos[5];
             const izq    = this.recorrer(comp.hijos[0]);
             const der    = this.recorrer(comp.hijos[2]);
-            const opTok  = comp.hijos[1];
-            let opRel = '==';
-            if (opTok.LF === 10) opRel = '>';
-            else if (opTok.LF === 11) opRel = '<';
-            const lV   = this.nuevaEtiqueta();
-            const lF   = this.nuevaEtiqueta();
-            const lFin = this.nuevaEtiqueta();
-            this.emitir(`if ${izq} ${opRel} ${der} goto ${lV}`);
-            this.emitir(`goto ${lF}`);
-            this.emitir(`${lV}:`);
+            const op_tok = comp.hijos[1];
+            let op_rel = '==';
+            if (op_tok.LF === 10) op_rel = '>';
+            else if (op_tok.LF === 11) op_rel = '<';
+            const lv   = this.nueva_etiqueta();
+            const lf   = this.nueva_etiqueta();
+            const lfin = this.nueva_etiqueta();
+            this.emitir(`if ${izq} ${op_rel} ${der} goto ${lv}`);
+            this.emitir(`goto ${lf}`);
+            this.emitir(`${lv}:`);
             this.recorrer(cuerpo);
-            this.emitir(`goto ${lFin}`);
-            this.emitir(`${lF}:`);
+            this.emitir(`goto ${lfin}`);
+            this.emitir(`${lf}:`);
             if (alt.valor !== 'e' && alt.valor !== 'ε' && alt.hijos && alt.hijos.length > 0)
                 this.recorrer(alt.hijos[1]);
-            this.emitir(`${lFin}:`);
+            this.emitir(`${lfin}:`);
         }
         return null;
     }
 
     // mapa de variables y temporales
-    _construirMapaVariables() {
+    construir_mapa() {
         for (const simbolo of this.tabla) {
             if (!simbolo.tipo || simbolo.tipo.toUpperCase() === 'PROGRAMA') continue;
             if (!simbolo.nombre) continue;
-            this.variablesMasm.push({ nombre: simbolo.nombre, tipo: simbolo.tipo });
+            this.variables_masm.push({ nombre: simbolo.nombre, tipo: simbolo.tipo });
         }
-        for (const linea of this.codigoIntermedio) {
+        for (const linea of this.codigo_intermedio) {
             const m = linea.match(/^(t\d+)\s*=/);
-            if (m && !(m[1] in this.temporalesMasm))
-                this.temporalesMasm[m[1]] = true;
+            if (m && !(m[1] in this.temporales_masm))
+                this.temporales_masm[m[1]] = true;
         }
     }
 
-    // formatea en 3 columnas: mnemonico | op1 | op2
-    _asm(linea) {
+    // formatea en 3 columnas
+    asm(linea) {
         if (linea === '' || (/^[A-Za-z_.][A-Za-z0-9_.]*:?(\s+\w.*)?$/.test(linea) && !linea.startsWith(' '))) {
-            this.codigoAsm.push(linea);
+            this.codigo_asm.push(linea);
             return;
         }
         const sangria  = linea.match(/^(\s*)/)[1];
         const contenido = linea.trimStart();
         const espacio  = contenido.search(/\s/);
         if (espacio === -1) {
-            this.codigoAsm.push(`${sangria}${contenido}`);
+            this.codigo_asm.push(`${sangria}${contenido}`);
             return;
         }
-        const mnem = contenido.slice(0, espacio);
+        const mnem  = contenido.slice(0, espacio);
         const resto = contenido.slice(espacio).trim();
         const coma  = resto.indexOf(',');
         if (coma === -1) {
-            this.codigoAsm.push(`${sangria}${mnem.padEnd(12)}${resto}`);
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)}${resto}`);
         } else {
             const op1 = resto.slice(0, coma).trim();
             const op2 = resto.slice(coma + 1).trim();
-            this.codigoAsm.push(`${sangria}${mnem.padEnd(12)}${op1.padEnd(20)}${op2}`);
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)}${op1.padEnd(20)}${op2}`);
         }
     }
 
-    _nombrePrograma() {
+    nombre_programa() {
         const p = this.tabla.find(s => s.tipo === 'PROGRAMA');
         const nombre = p ? p.nombre : 'programa';
         return nombre.slice(0, 8);
     }
 
-    _esRef(nombre) {
-        return this.variablesMasm.some(v => v.nombre === nombre) ||
-               (nombre in this.temporalesMasm);
+    es_ref(nombre) {
+        return this.variables_masm.some(v => v.nombre === nombre) ||
+               (nombre in this.temporales_masm);
     }
 
-    _tipoVar(nombre) {
+    tipo_var(nombre) {
         const s = this.tabla.find(s => s.nombre === nombre);
         return s ? s.tipo : 'int';
     }
 
-    _registrarString(val) {
+    registrar_string(val) {
         const contenido = val.slice(1, -1);
-        const etq = `str_${this.contadorStrings++}`;
+        const etq = `str_${this.contador_strings++}`;
         this.strings.push({ etiqueta: etq, valor: contenido });
         return etq;
     }
 
-    _cargarAx(val) {
-        if (this._esRef(val)) {
-            this._asm(`    mov  ax, ${val}`);
+    cargar_ax(val) {
+        if (this.es_ref(val)) {
+            this.asm(`    mov  ax, ${val}`);
         } else if (/^-?\d+$/.test(val)) {
-            this._asm(`    mov  ax, ${val}`);
+            this.asm(`    mov  ax, ${val}`);
         } else if (val.startsWith('"')) {
-            const etq = this._registrarString(val);
-            this._asm(`    lea  ax, ${etq}`);
+            const etq = this.registrar_string(val);
+            this.asm(`    lea  ax, ${etq}`);
         } else {
-            this._asm(`    mov  ax, 0`);
+            this.asm(`    mov  ax, 0`);
         }
     }
 
-    _cargarEax(val) { this._cargarAx(val); }
+    // generador masm
+    generar_masm() {
+        const prog = this.nombre_programa();
 
-    _generarMasm() {
-        const prog = this._nombrePrograma();
+        this.asm(`title    ${prog}`);
+        this.asm('.model   small');
+        this.asm('.stack   100h');
+        this.asm('');
+        this.asm('.data');
+        this.asm('');
 
-        this._asm(`title    ${prog}`);
-        this._asm('.model   small');
-        this._asm('.stack   100h');
-        this._asm('');
-        this._asm('.data');
-        this._asm('');
-
-        if (this.variablesMasm.length > 0) {
-            for (const v of this.variablesMasm) {
+        if (this.variables_masm.length > 0) {
+            for (const v of this.variables_masm) {
                 const pad = v.nombre.padEnd(14);
                 if (v.tipo === 'String') {
-                    this._asm(`    ${pad} DB  128 DUP(0)`);
+                    this.asm(`    ${pad} DB  128 DUP(0)`);
                 } else {
-                    this._asm(`    ${pad} DW  0`);
+                    this.asm(`    ${pad} DW  0`);
                 }
             }
-            this._asm('');
+            this.asm('');
         }
 
-        const tempsKeys = Object.keys(this.temporalesMasm);
-        if (tempsKeys.length > 0) {
-            for (const tNombre of tempsKeys) {
-                this._asm(`    ${tNombre.padEnd(14)} DW  0`);
+        const temps = Object.keys(this.temporales_masm);
+        if (temps.length > 0) {
+            for (const t of temps) {
+                this.asm(`    ${t.padEnd(14)} DW  0`);
             }
-            this._asm('');
+            this.asm('');
         }
 
-        this._asm('    buf_int         DB  7 DUP(?)');
-        this._asm('');
+        this.asm('    buf_int         DB  7 DUP(?)');
+        this.asm('');
 
-        const stringsIdx = this.codigoAsm.length;
-        this._asm('');
+        const strings_idx = this.codigo_asm.length;
+        this.asm('');
 
-        this._asm('.code');
-        this._asm('');
+        this.asm('.code');
+        this.asm('');
 
         // subrutina imprimir
-        this._asm('IMPRIMIR PROC');
-        this._asm('    push ax');
-        this._asm('    mov  ah, 09h');
-        this._asm('    int  21h');
-        this._asm('    pop  ax');
-        this._asm('    ret');
-        this._asm('IMPRIMIR ENDP');
-        this._asm('');
+        this.asm('IMPRIMIR PROC');
+        this.asm('    push ax');
+        this.asm('    mov  ah, 09h');
+        this.asm('    int  21h');
+        this.asm('    pop  ax');
+        this.asm('    ret');
+        this.asm('IMPRIMIR ENDP');
+        this.asm('');
 
         // subrutina imprimir_int
-        this._asm('IMPRIMIR_INT PROC');
-        this._asm('    push ax');
-        this._asm('    push bx');
-        this._asm('    push cx');
-        this._asm('    push dx');
-        this._asm('    push di');
-        this._asm('');
-        this._asm('    lea  di, buf_int');
-        this._asm('    mov  cx, 0');
-        this._asm('    cmp  ax, 0');
-        this._asm('    jge  .positivo');
-        this._asm('    mov  BYTE PTR [di], "-"');
-        this._asm('    inc  di');
-        this._asm('    neg  ax');
-        this._asm('.positivo:');
-        this._asm('    mov  bx, 10');
-        this._asm('.loop_div:');
-        this._asm('    xor  dx, dx');
-        this._asm('    div  bx');
-        this._asm('    push dx');
-        this._asm('    inc  cx');
-        this._asm('    cmp  ax, 0');
-        this._asm('    jne  .loop_div');
-        this._asm('.loop_str:');
-        this._asm('    pop  dx');
-        this._asm('    add  dl, "0"');
-        this._asm('    mov  [di], dl');
-        this._asm('    inc  di');
-        this._asm('    loop .loop_str');
-        this._asm('    mov  BYTE PTR [di], "$"');
-        this._asm('');
-        this._asm('    lea  dx, buf_int');
-        this._asm('    call IMPRIMIR');
-        this._asm('');
-        this._asm('    pop  di');
-        this._asm('    pop  dx');
-        this._asm('    pop  cx');
-        this._asm('    pop  bx');
-        this._asm('    pop  ax');
-        this._asm('    ret');
-        this._asm('IMPRIMIR_INT ENDP');
-        this._asm('');
+        this.asm('IMPRIMIR_INT PROC');
+        this.asm('    push ax');
+        this.asm('    push bx');
+        this.asm('    push cx');
+        this.asm('    push dx');
+        this.asm('    push di');
+        this.asm('');
+        this.asm('    lea  di, buf_int');
+        this.asm('    mov  cx, 0');
+        this.asm('    cmp  ax, 0');
+        this.asm('    jge  .positivo');
+        this.asm('    mov  BYTE PTR [di], "-"');
+        this.asm('    inc  di');
+        this.asm('    neg  ax');
+        this.asm('.positivo:');
+        this.asm('    mov  bx, 10');
+        this.asm('.loop_div:');
+        this.asm('    xor  dx, dx');
+        this.asm('    div  bx');
+        this.asm('    push dx');
+        this.asm('    inc  cx');
+        this.asm('    cmp  ax, 0');
+        this.asm('    jne  .loop_div');
+        this.asm('.loop_str:');
+        this.asm('    pop  dx');
+        this.asm('    add  dl, "0"');
+        this.asm('    mov  [di], dl');
+        this.asm('    inc  di');
+        this.asm('    loop .loop_str');
+        this.asm('    mov  BYTE PTR [di], "$"');
+        this.asm('');
+        this.asm('    lea  dx, buf_int');
+        this.asm('    call IMPRIMIR');
+        this.asm('');
+        this.asm('    pop  di');
+        this.asm('    pop  dx');
+        this.asm('    pop  cx');
+        this.asm('    pop  bx');
+        this.asm('    pop  ax');
+        this.asm('    ret');
+        this.asm('IMPRIMIR_INT ENDP');
+        this.asm('');
 
-        this._asm(`${prog} PROC`);
-        this._asm('    mov  ax, @data');
-        this._asm('    mov  ds, ax');
-        this._asm('');
+        this.asm(`${prog} PROC`);
+        this.asm('    mov  ax, @data');
+        this.asm('    mov  ds, ax');
+        this.asm('');
 
-        for (const linea of this.codigoIntermedio) {
-            this._traducirLinea(linea);
+        for (const linea of this.codigo_intermedio) {
+            this.traducir_linea(linea);
         }
 
-        this._asm('    mov  ah, 4Ch');
-        this._asm('    mov  al, 0');
-        this._asm('    int  21h');
-        this._asm('');
-        this._asm(`${prog} ENDP`);
-        this._asm('');
-        this._asm(`END ${prog}`);
+        this.asm('    mov  ah, 4Ch');
+        this.asm('    mov  al, 0');
+        this.asm('    int  21h');
+        this.asm('');
+        this.asm(`${prog} ENDP`);
+        this.asm('');
+        this.asm(`END ${prog}`);
 
         if (this.strings.length > 0) {
-            const lineasStrings = [];
+            const lineas = [];
             for (const s of this.strings) {
                 const escaped = s.valor.replace(/"/g, "'");
-                lineasStrings.push(`    ${s.etiqueta.padEnd(14)} DB  "${escaped}$"`);
+                lineas.push(`    ${s.etiqueta.padEnd(14)} DB  "${escaped}$"`);
             }
-            lineasStrings.push('');
-            this.codigoAsm.splice(stringsIdx, 1, ...lineasStrings);
+            lineas.push('');
+            this.codigo_asm.splice(strings_idx, 1, ...lineas);
         } else {
-            this.codigoAsm.splice(stringsIdx, 1);
+            this.codigo_asm.splice(strings_idx, 1);
         }
     }
 
-    _traducirLinea(linea) {
+    // traduccion de lineas tac -> masm
+    traducir_linea(linea) {
 
         // etiqueta
         if (/^L\d+:$/.test(linea.trim())) {
-            this._asm(`${linea.trim()}`);
+            this.asm(`${linea.trim()}`);
             return;
         }
 
         // salto condicional
-        const mCond = linea.match(/^if\s+(\S+)\s+(==|>|<|>=|<=|!=)\s+(\S+)\s+goto\s+(\S+)$/);
-        if (mCond) {
-            const [, izq, op, der, etq] = mCond;
-            this._cargarAx(izq);
-            this._asm('    mov  cx, ax');
-            this._cargarAx(der);
-            this._asm('    cmp  cx, ax');
+        const m_cond = linea.match(/^if\s+(\S+)\s+(==|>|<|>=|<=|!=)\s+(\S+)\s+goto\s+(\S+)$/);
+        if (m_cond) {
+            const [, izq, op, der, etq] = m_cond;
+            this.cargar_ax(izq);
+            this.asm('    mov  cx, ax');
+            this.cargar_ax(der);
+            this.asm('    cmp  cx, ax');
             const jmp = { '==':'je', '!=':'jne', '>':'jg', '<':'jl', '>=':'jge', '<=':'jle' }[op];
-            this._asm(`    ${jmp}  ${etq}`);
+            this.asm(`    ${jmp}  ${etq}`);
             return;
         }
 
         // salto incondicional
-        const mGoto = linea.match(/^goto\s+(\S+)$/);
-        if (mGoto) {
-            this._asm(`    jmp  ${mGoto[1]}`);
+        const m_goto = linea.match(/^goto\s+(\S+)$/);
+        if (m_goto) {
+            this.asm(`    jmp  ${m_goto[1]}`);
             return;
         }
 
         // impresion
-        const mPrint = linea.match(/^print\s+(.+)$/);
-        if (mPrint) {
-            const val      = mPrint[1].trim();
-            const esString = val.startsWith('"') || this._tipoVar(val) === 'String';
-            if (esString) {
+        const m_print = linea.match(/^print\s+(.+)$/);
+        if (m_print) {
+            const val       = m_print[1].trim();
+            const es_string = val.startsWith('"') || this.tipo_var(val) === 'String';
+            if (es_string) {
                 if (val.startsWith('"')) {
-                    const etq = this._registrarString(val);
-                    this._asm(`    lea  dx, ${etq}`);
+                    const etq = this.registrar_string(val);
+                    this.asm(`    lea  dx, ${etq}`);
                 } else {
-                    this._asm(`    lea  dx, ${val}`);
+                    this.asm(`    lea  dx, ${val}`);
                 }
-                this._asm('    call IMPRIMIR');
+                this.asm('    call IMPRIMIR');
             } else {
-                this._cargarAx(val);
-                this._asm('    call IMPRIMIR_INT');
+                this.cargar_ax(val);
+                this.asm('    call IMPRIMIR_INT');
             }
             return;
         }
 
         // asignacion con operacion
-        const mOp = linea.match(/^(\S+)\s*=\s*(\S+)\s*([+\-*/])\s*(\S+)$/);
-        if (mOp) {
-            const [, dest, izq, op, der] = mOp;
-            this._cargarAx(izq);
+        const m_op = linea.match(/^(\S+)\s*=\s*(\S+)\s*([+\-*/])\s*(\S+)$/);
+        if (m_op) {
+            const [, dest, izq, op, der] = m_op;
+            this.cargar_ax(izq);
             if (op === '+') {
-                this._asm('    mov  cx, ax');
-                this._cargarAx(der);
-                this._asm('    add  cx, ax');
-                this._asm('    mov  ax, cx');
+                this.asm('    mov  cx, ax');
+                this.cargar_ax(der);
+                this.asm('    add  cx, ax');
+                this.asm('    mov  ax, cx');
             } else if (op === '-') {
-                this._asm('    mov  cx, ax');
-                this._cargarAx(der);
-                this._asm('    sub  cx, ax');
-                this._asm('    mov  ax, cx');
+                this.asm('    mov  cx, ax');
+                this.cargar_ax(der);
+                this.asm('    sub  cx, ax');
+                this.asm('    mov  ax, cx');
             } else if (op === '*') {
-                this._asm('    mov  cx, ax');
-                this._cargarAx(der);
-                this._asm('    imul cx');
+                this.asm('    mov  cx, ax');
+                this.cargar_ax(der);
+                this.asm('    imul cx');
             } else if (op === '/') {
-                this._asm('    mov  cx, ax');
-                this._cargarAx(der);
-                this._asm('    mov  bx, ax');
-                this._asm('    mov  ax, cx');
-                this._asm('    cwd');
-                this._asm('    idiv bx');
+                this.asm('    mov  cx, ax');
+                this.cargar_ax(der);
+                this.asm('    mov  bx, ax');
+                this.asm('    mov  ax, cx');
+                this.asm('    cwd');
+                this.asm('    idiv bx');
             }
-            if (this._esRef(dest)) this._asm(`    mov  ${dest}, ax`);
+            if (this.es_ref(dest)) this.asm(`    mov  ${dest}, ax`);
             return;
         }
 
         // asignacion simple
-        const mAsig = linea.match(/^(\S+)\s*=\s*(.+)$/);
-        if (mAsig) {
-            const [, dest, src] = mAsig;
-            this._cargarAx(src.trim());
-            if (this._esRef(dest)) this._asm(`    mov  ${dest}, ax`);
+        const m_asig = linea.match(/^(\S+)\s*=\s*(.+)$/);
+        if (m_asig) {
+            const [, dest, src] = m_asig;
+            this.cargar_ax(src.trim());
+            if (this.es_ref(dest)) this.asm(`    mov  ${dest}, ax`);
             return;
         }
 
-        this._asm(`    nop`);
+        this.asm(`    nop`);
     }
 }

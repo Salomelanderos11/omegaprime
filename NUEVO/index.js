@@ -1,14 +1,16 @@
 import escanear from "./scanner.js";
 import Parser from "./parser.js"; 
 import AnalizadorSemantico from "./semantico.js";
-import Traductor from "./traductor.js";
+import traductor from "./traductor.js";
 
 const btnScan = document.getElementById("btn_scan");
 const btn_parser = document.getElementById("btn_azul");
 const tablaTokens = document.getElementById("tokens-body");
 const mensajeSintactico = document.getElementById("mensaje-sintactico"); 
 const btn_seman = document.getElementById("btn_seman");
+const panelTac= document.getElementById("panelTac");
 const btnTac = document.getElementById("btn_tac");
+const panelAsm = document.getElementById("panelAsm");
 const consolaSalida = document.getElementById("consola-salida");
 let resultadoLexico;
 let resultadoSintactico;
@@ -166,39 +168,53 @@ btn_seman.addEventListener("click", function() {
     }
 });
 
-btnTac.addEventListener("click", function() {
+btnTac.addEventListener("click", function () {
     if (!semantico || semantico.errores.length > 0) {
         alert("⚠️ Primero debes ejecutar el Análisis Semántico sin errores.");
         return;
     }
-
+ 
     try {
-        consolaSalida.innerHTML = "";
-
-        const miTraductor = new Traductor(resultadoSintactico.arbol, semantico.tabla);
-        const { tac, asm } = miTraductor.traducir();
-
-        if (asm.length === 0) {
-            consolaSalida.innerHTML = "// No se generó código.";
-            return;
+        if (panelTac) panelTac.innerHTML = "";
+        if (panelAsm) panelAsm.innerHTML = "";
+        if (consolaSalida && !panelTac) consolaSalida.innerHTML = "";
+ 
+        const mi_traductor = new traductor(resultadoSintactico.arbol, semantico.tabla);
+        const { tac, asm } = mi_traductor.traducir();
+ 
+        // ── Mostrar TAC ─────────────────────────────────────────────────────
+        if (panelTac) {
+            panelTac.innerHTML = tac.length === 0
+                ? "// No se generó TAC."
+                : tac.join("\n");
+        } else if (consolaSalida) {
+            consolaSalida.innerHTML = tac.join("\n");
         }
-
-        consolaSalida.innerHTML = asm.map(escapeHtml).join("\n");
-
-        console.log("%c🚀 TAC", "color: #9b59b6; font-weight: bold;", tac);
-        alert("✅ Ensamblador generado con éxito.");
-
+ 
+        // ── Mostrar ASM ─────────────────────────────────────────────────────
+        if (panelAsm) {
+            panelAsm.innerHTML = asm.length === 0
+                ? "// No se generó ensamblador."
+                : asm.map(escapeHtml).join("\n");
+        }
+ 
+        console.log("%c🚀 TAC",         "color: #9b59b6; font-weight: bold;", tac);
+        console.log("%c⚙️  ASM",         "color: #e67e22; font-weight: bold;", asm);
+        alert("✅ Código generado con éxito.");
+ 
     } catch (error) {
         console.error("Error en la generación de código:", error);
         alert("❌ Hubo un fallo en la traducción: " + error.message);
     }
 });
-
+ 
+// Utilidad: escapar HTML para mostrar en <pre>
 function escapeHtml(str) {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 }
-
-
 
 
 
