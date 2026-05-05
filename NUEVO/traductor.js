@@ -121,7 +121,12 @@ export default class traductor {
         for (const simbolo of this.tabla) {
             if (!simbolo.tipo || simbolo.tipo.toUpperCase() === 'PROGRAMA') continue;
             if (!simbolo.nombre) continue;
-            this.variables_masm.push({ nombre: simbolo.nombre, tipo: simbolo.tipo });
+            // --- MODIFICACIÓN: Ahora extraemos también el "valor" de la tabla ---
+            this.variables_masm.push({ 
+                nombre: simbolo.nombre, 
+                tipo: simbolo.tipo, 
+                valor: simbolo.valor // Extraemos el valor original
+            });
         }
         for (const linea of this.codigo_intermedio) {
             const m = linea.match(/^(t\d+)\s*=/);
@@ -136,9 +141,9 @@ export default class traductor {
             this.codigo_asm.push(linea);
             return;
         }
-        const sangria  = linea.match(/^(\s*)/)[1];
+        const sangria   = linea.match(/^(\s*)/)[1];
         const contenido = linea.trimStart();
-        const espacio  = contenido.search(/\s/);
+        const espacio   = contenido.search(/\s/);
         if (espacio === -1) {
             this.codigo_asm.push(`${sangria}${contenido}`);
             return;
@@ -205,10 +210,24 @@ export default class traductor {
         if (this.variables_masm.length > 0) {
             for (const v of this.variables_masm) {
                 const pad = v.nombre.padEnd(14);
+                
+                // --- MODIFICACIÓN: Rescatar el valor inicial ---
+                let valor_inicial = v.valor !== undefined && v.valor !== null ? v.valor : 0;
+
                 if (v.tipo === 'String') {
-                    this.asm(`    ${pad} DB  128 DUP(0)`);
+                    // Validamos si tiene un string válido en su valor inicial
+                    if (valor_inicial !== 0 && valor_inicial !== '0' && valor_inicial !== "" && valor_inicial !== '""') {
+                        // Limpiamos las comillas que traiga desde el analizador
+                        let cadenaLimpia = String(valor_inicial).replace(/^["']|["']$/g, '');
+                        // Ensamblamos el string original en memoria terminado en '$'
+                        this.asm(`    ${pad} DB  "${cadenaLimpia}$"`);
+                    } else {
+                        // Si no se inicializó con cadena de texto, dejamos buffer libre
+                        this.asm(`    ${pad} DB  128 DUP(0)`);
+                    }
                 } else {
-                    this.asm(`    ${pad} DW  0`);
+                    // Inyectar en memoria DW el número inicial
+                    this.asm(`    ${pad} DW  ${valor_inicial}`);
                 }
             }
             this.asm('');

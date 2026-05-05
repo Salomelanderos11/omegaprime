@@ -108,9 +108,7 @@ btn_parser.addEventListener("click",function(){
 // Referencias a los nuevos cuerpos de tabla
 
 
-// Corregido: de "clink" a "click"
 btn_seman.addEventListener("click", function() {
-    // Verificación de seguridad: ¿Ya corrimos el parser?
     if (!resultadoSintactico || !resultadoSintactico.arbol) {
         alert("⚠️ Primero debes ejecutar el Parser (botón azul).");
         return;
@@ -197,7 +195,7 @@ btnTac.addEventListener("click", function () {
                 ? "// No se generó ensamblador."
                 : asm.map(escapeHtml).join("\n");
         }
- 
+        console.log("aqui",asm);
         console.log("%c🚀 TAC",         "color: #9b59b6; font-weight: bold;", tac);
         console.log("%c⚙️  ASM",         "color: #e67e22; font-weight: bold;", asm);
         alert("✅ Código generado con éxito.");

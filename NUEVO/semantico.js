@@ -5,14 +5,16 @@ export default class analizadorsemantico {
         this.errores = [];
         this.contadorme = 0; // contador para direcciones de memoria
 
-        //tamaños de tipo variable 
+        // tamaños fijos de tipos de variable 
+        // (String ya no necesita un tamaño fijo aquí, pero lo dejamos como fallback)
         this.tamaños = {
-            "int": 4,
-            "float": 8,
+            "int": 2,
+            "float": 4,
             "String": 2 
         };
     }
-    //funcion principal que activa el analisis
+
+    // funcion principal que activa el analisis
     validacion() {
         this.tabla = [];
         this.errores = [];
@@ -20,7 +22,8 @@ export default class analizadorsemantico {
         this.recorrer(this.arbol);
         console.log("tabla de simbolos final:", this.tabla);
     }
-    //funcion para pasar por cad nodo del arbol sintactico que da el parser
+
+    // funcion para pasar por cada nodo del arbol sintactico que da el parser
     recorrer(nodo) {
         if (!nodo) return;
         let tiponodo = nodo.tipo;
@@ -67,28 +70,42 @@ export default class analizadorsemantico {
                     }
                 }
             }
-            //verificar si existe en la tabla
+            
+            // verificar si existe en la tabla
             let existe = this.tabla.find(simbolo => simbolo.nombre === nombrevar);
 
             if (existe) {
                 this.errores.push(`error semantico: la variable '${nombrevar}' ya ha sido declarada.`);
             } else {
                 // direcciones de memoria 
-                    let direccionasig = this.contadorme; 
-                    let bytes = this.tamaños[tipo] || 1; 
+                let direccionasig = this.contadorme; 
+                let bytes = this.tamaños[tipo] || 1; 
 
-                    this.tabla.push({
-                        nombre: nombrevar,
-                        tipo: tipo,
-                        valor: valor,
-                        direccion: direccionasig 
-                    });
+                // --- MODIFICACIÓN: Cálculo de memoria dinámico para Strings ---
+                if (tipo === "String") {
+                    if (typeof valor === "string") {
+                        // Eliminamos las comillas iniciales y finales para contar solo los caracteres reales
+                        let cadenaLimpia = valor.replace(/^["']|["']$/g, '');
+                        bytes = cadenaLimpia.length; // 1 byte por carácter
+                    } else {
+                        // Si se declara sin inicializar (String nombre;), se asumen 0 bytes
+                        bytes = 1; 
+                    }
+                }
+                // -------------------------------------------------------------
 
-                    this.contadorme += bytes;
+                this.tabla.push({
+                    nombre: nombrevar,
+                    tipo: tipo,
+                    valor: valor,
+                    direccion: direccionasig 
+                });
+
+                this.contadorme += bytes;
             }
         }
 
-        // ---verificacion de que las variables ya estan declaradas antes de usarse en las expresiones ---
+        // --- verificacion de que las variables ya estan declaradas antes de usarse en las expresiones ---
         if (tiponodo == "<expresion>") {
             if (nodo.hijos && nodo.hijos[0] && nodo.hijos[0].hijos) {
                 let candidato = nodo.hijos[0].hijos[0];
@@ -102,8 +119,7 @@ export default class analizadorsemantico {
             }
         }
 
-        // --- validacion de asignaciones.verificar si una variable a la que se le esta asignando un valor ya fue declarada
-        // que el tipo de valor que se le asigna sea correcto  ---
+        // --- validacion de asignaciones ---
         if (tiponodo == "<asignacion>") {
             let nombrevar = nodo.hijos[0].valor;
             let simboloexistente = this.tabla.find(simbolo => simbolo.nombre === nombrevar);
