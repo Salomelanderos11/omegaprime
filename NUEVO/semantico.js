@@ -61,10 +61,20 @@ export default class analizadorsemantico {
                     }
 
                     // validacion de tipos
-                    if (tipo == "int" || tipo == "float") {
+                    // validacion de tipos corregida
+                    if (tipo == "int") {
                         if (factor.tipo == "CADENA") {
-                            this.errores.push(`error: no se puede asignar CADENA a '${nombrevar}' (${tipo})`);
+                            this.errores.push(`error: no se puede asignar CADENA a '${nombrevar}' (int)`);
+                        } else if (factor.tipo == "NUMERO" && factor.valor.includes(".")) {
+                            // Si es un número pero tiene punto decimal, es un float
+                            this.errores.push(`error semantico: no se puede asignar un valor decimal (${factor.valor}) a la variable '${nombrevar}' de tipo int`);
                         }
+                    } else if (tipo == "float") {
+                         if (factor.tipo == "CADENA") {
+                            this.errores.push(`error: no se puede asignar CADENA a '${nombrevar}' (float)`);
+                        }
+                        // Un float usualmente sí puede recibir un entero (ej: float x = 5; es válido en muchos lenguajes),
+                        // por lo que no marcamos error si es un NUMERO sin punto decimal.
                     } else if (tipo == "String" && factor.tipo == "NUMERO") {
                         this.errores.push(`error: no se puede asignar NUMERO a '${nombrevar}' (String)`);
                     }

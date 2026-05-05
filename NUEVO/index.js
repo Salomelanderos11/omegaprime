@@ -182,6 +182,7 @@ btnTac.addEventListener("click", function () {
 
         const mi_traductor = new traductor(resultadoSintactico.arbol, semantico.tabla);
         const { tac, asm } = mi_traductor.traducir();
+        
 
         // Guardamos el ASM globalmente para usarlo después
         asmGlobal = asm; 
@@ -240,8 +241,8 @@ function mostrarTraductorObjeto(asmArray) {
             <table style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; font-family: monospace; white-space: normal;">
                 <thead>
                     <tr style="background: #1e272c; color: #00ff3c; border-bottom: 2px solid #00ff3c;">
-                        <th style="padding: 8px; width: 25%;">Variable</th>
-                        <th style="padding: 8px; width: 30%;">Offset (Binario)</th>
+                        <th style="padding: 8px; width: 15%;">Variable</th>
+                        <th style="padding: 8px; width: 20%;">Offset (Binario)</th>
                         <th style="padding: 8px; width: 45%;">Bytes en Memoria</th>
                     </tr>
                 </thead>

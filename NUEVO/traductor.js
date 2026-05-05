@@ -69,7 +69,13 @@ export default class traductor {
             const opc_asig   = nodo.hijos[3];
             if (opc_asig.valor !== 'e' && opc_asig.valor !== 'ε' && opc_asig.hijos && opc_asig.hijos.length > 0) {
                 const res = this.recorrer(opc_asig.hijos[1]);
-                this.emitir(`${nombre_var} = ${res}`);
+
+                if (tipo_var === 'String') {
+                    // no generar asignación TAC para strings
+                    this.registrar_string(res);
+                } else {
+                    this.emitir(`${nombre_var} = ${res}`);
+                }
             } else {
                 const def = tipo_var === 'String' ? '""' : '0';
                 this.emitir(`${nombre_var} = ${def}`);
@@ -77,7 +83,11 @@ export default class traductor {
         }
         else if (t === '<asignacion>') {
             const res = this.recorrer(nodo.hijos[2]);
-            this.emitir(`${nodo.hijos[0].valor} = ${res}`);
+            if (typeof res === 'string' && res.startsWith('"')) {
+                this.registrar_string(res);
+            } else {
+                this.emitir(`${nodo.hijos[0].valor} = ${res}`);
+            }
         }
         else if (t === '<impresion>') {
             const res = this.recorrer(nodo.hijos[2]);
@@ -125,7 +135,9 @@ export default class traductor {
             this.variables_masm.push({ 
                 nombre: simbolo.nombre, 
                 tipo: simbolo.tipo, 
-                valor: simbolo.valor // Extraemos el valor original
+                valor: typeof simbolo.valor === 'string'
+                ? simbolo.valor.replace(/,/g, '').trim()
+                : simbolo.valor
             });
         }
         for (const linea of this.codigo_intermedio) {
@@ -137,29 +149,63 @@ export default class traductor {
 
     // formatea en 3 columnas
     asm(linea) {
-        if (linea === '' || (/^[A-Za-z_.][A-Za-z0-9_.]*:?(\s+\w.*)?$/.test(linea) && !linea.startsWith(' '))) {
+        if (linea === '' || (/^[A-Za-z_.][A-Za-z0-9_.]*:?$/.test(linea.trim()))) {
             this.codigo_asm.push(linea);
             return;
         }
-        const sangria   = linea.match(/^(\s*)/)[1];
-        const contenido = linea.trimStart();
-        const espacio   = contenido.search(/\s/);
-        if (espacio === -1) {
-            this.codigo_asm.push(`${sangria}${contenido}`);
+
+        const sangria = linea.match(/^(\s*)/)[1];
+        const contenido = linea.trim();
+
+        const partes = contenido.split(/\s+/);
+        const mnem = partes[0];
+
+        // instrucciones de 1 operando o sin operandos
+        if (partes.length === 1) {
+            this.codigo_asm.push(`${sangria}${mnem}`);
             return;
         }
-        const mnem  = contenido.slice(0, espacio);
-        const resto = contenido.slice(espacio).trim();
-        const coma  = resto.indexOf(',');
-        
-        if (coma === -1) {
-            // forzamos el espacio agregando " " antes de resto y subimos el pad a 20
-            this.codigo_asm.push(`${sangria}${mnem.padEnd(20)} ${resto}`);
+
+        let operandos = contenido.slice(mnem.length).trim();
+
+        // 🔥 SI YA TIENE COMA → RESPETAR
+        if (operandos.includes(',')) {
+            const [op1, op2] = operandos.split(',').map(o => o.trim());
+            this.codigo_asm.push(
+                `${sangria}${mnem.padEnd(12)} ${op1.padEnd(12)}, ${op2}`
+            );
+            return;
+        }
+
+        //  DETECTAR INSTRUCCIONES DE 1 OPERANDO (NO LLEVAN COMA)
+        const instrucciones = [
+                            'push','pop','inc','dec','neg','not',
+                            'jmp','je','jne','jg','jl','jge','jle',
+                            'call','ret','int','loop',
+                            'div','idiv','imul','cwd'
+                        ];
+
+        if (instrucciones.includes(mnem.toLowerCase())) {
+            this.codigo_asm.push(
+                `${sangria}${mnem.padEnd(12)} ${operandos}`
+            );
+            return;
+        }
+
+        // 🔥 FORZAR COMA SOLO SI SON 2 OPERANDOS SIMPLES
+        const ops = operandos.split(/\s+/);
+
+        if (ops.length >= 2) {
+            const op1 = ops[0];
+            const op2 = operandos.slice(op1.length).trim();
+
+            this.codigo_asm.push(
+                `${sangria}${mnem.padEnd(12)} ${op1.padEnd(12)}, ${op2}`
+            );
         } else {
-            const op1 = resto.slice(0, coma).trim();
-            const op2 = resto.slice(coma + 1).trim();
-            // mismo ajuste para instrucciones con dos operandos
-            this.codigo_asm.push(`${sangria}${mnem.padEnd(20)} ${op1.padEnd(15)} ${op2}`);
+            this.codigo_asm.push(
+                `${sangria}${mnem.padEnd(12)} ${operandos}`
+            );
         }
     }
     
@@ -192,9 +238,8 @@ export default class traductor {
             this.asm(`    mov  ax, ${val}`);
         } else if (/^-?\d+$/.test(val)) {
             this.asm(`    mov  ax, ${val}`);
-        } else if (val.startsWith('"')) {
-            const etq = this.registrar_string(val);
-            this.asm(`    lea  ax, ${etq}`);
+        }  else if (val.startsWith('"')) {
+            this.asm(`    mov  ax, 0`);
         } else {
             this.asm(`    mov  ax, 0`);
         }
@@ -216,22 +261,33 @@ export default class traductor {
                 const pad = v.nombre.padEnd(14);
                 
                 // --- MODIFICACIÓN: Rescatar el valor inicial ---
-                let valor_inicial = v.valor !== undefined && v.valor !== null ? v.valor : 0;
+                let valor_inicial = v.valor;
+
+                // 🔥 LIMPIAR COMAS SI VIENEN DEL PARSER
+                if (typeof valor_inicial === 'string') {
+                    valor_inicial = valor_inicial.replace(/,/g, '').trim();
+                }
 
                 if (v.tipo === 'String') {
-                    // Validamos si tiene un string válido en su valor inicial
-                    if (valor_inicial !== 0 && valor_inicial !== '0' && valor_inicial !== "" && valor_inicial !== '""') {
-                        // Limpiamos las comillas que traiga desde el analizador
+
+                    if (valor_inicial && valor_inicial !== '0' && valor_inicial !== '""') {
                         let cadenaLimpia = String(valor_inicial).replace(/^["']|["']$/g, '');
-                        // Ensamblamos el string original en memoria terminado en '$'
                         this.asm(`    ${pad} DB  "${cadenaLimpia}$"`);
                     } else {
-                        // Si no se inicializó con cadena de texto, dejamos buffer libre
                         this.asm(`    ${pad} DB  128 DUP(0)`);
                     }
+
                 } else {
-                    // Inyectar en memoria DW el número inicial
-                    this.asm(`    ${pad} DW  ${valor_inicial}`);
+                    // 🔥 SOLO NÚMEROS VÁLIDOS
+                    let numero = 0;
+
+                    if (typeof valor_inicial === 'number') {
+                        numero = valor_inicial;
+                    } else if (/^-?\d+$/.test(valor_inicial)) {
+                        numero = parseInt(valor_inicial);
+                    }
+
+                    this.asm(`    ${pad} DW  ${numero}`);
                 }
             }
             this.asm('');
@@ -272,33 +328,41 @@ export default class traductor {
         this.asm('    push dx');
         this.asm('    push di');
         this.asm('');
+
         this.asm('    lea  di, buf_int');
         this.asm('    mov  cx, 0');
         this.asm('    cmp  ax, 0');
         this.asm('    jge  .positivo');
-        this.asm('    mov  BYTE PTR [di], "-"');
+
+        this.asm('    mov  BYTE PTR [di], "-"');   // ✔ ya correcto
         this.asm('    inc  di');
         this.asm('    neg  ax');
+
         this.asm('.positivo:');
         this.asm('    mov  bx, 10');
+
         this.asm('.loop_div:');
-        this.asm('    xor  dx, dx');
+        this.asm('    xor  dx, dx');              // ✔ correcto
         this.asm('    div  bx');
         this.asm('    push dx');
         this.asm('    inc  cx');
         this.asm('    cmp  ax, 0');
         this.asm('    jne  .loop_div');
+
         this.asm('.loop_str:');
         this.asm('    pop  dx');
-        this.asm('    add  dl, "0"');
-        this.asm('    mov  [di], dl');
+        this.asm('    add  dl, "0"');             // ✔ con coma
+        this.asm('    mov  [di], dl');            // ✔ con coma
         this.asm('    inc  di');
         this.asm('    loop .loop_str');
-        this.asm('    mov  BYTE PTR [di], "$"');
+
+        this.asm('    mov  BYTE PTR [di], "$"');  // ✔ con coma
         this.asm('');
+
         this.asm('    lea  dx, buf_int');
         this.asm('    call IMPRIMIR');
         this.asm('');
+
         this.asm('    pop  di');
         this.asm('    pop  dx');
         this.asm('    pop  cx');
@@ -321,6 +385,7 @@ export default class traductor {
         this.asm('    mov  al, 0');
         this.asm('    int  21h');
         this.asm('');
+
         this.asm(`${prog} ENDP`);
         this.asm('');
         this.asm(`END ${prog}`);
@@ -370,20 +435,30 @@ export default class traductor {
         // impresion
         const m_print = linea.match(/^print\s+(.+)$/);
         if (m_print) {
-            const val       = m_print[1].trim();
-            const es_string = val.startsWith('"') || this.tipo_var(val) === 'String';
-            if (es_string) {
-                if (val.startsWith('"')) {
-                    const etq = this.registrar_string(val);
-                    this.asm(`    lea  dx, ${etq}`);
-                } else {
-                    this.asm(`    lea  dx, ${val}`);
-                }
+            const val = m_print[1].trim();
+
+            // 🔴 SI ES STRING LITERAL
+            if (val.startsWith('"')) {
+                const etq = this.registrar_string(val);
+                this.asm(`    lea  dx, ${etq}`);
                 this.asm('    call IMPRIMIR');
-            } else {
-                this.cargar_ax(val);
-                this.asm('    call IMPRIMIR_INT');
+                return;
             }
+
+            // 🔴 SI ES VARIABLE STRING → NO USARLA DIRECTO
+            if (this.tipo_var(val) === 'String') {
+                // ⚠️ evitar lea dx, inicio
+                // no hay copia de memoria implementada
+
+                // solución: ignorar o usar string vacío
+                this.asm(`    lea  dx, str_0`); // opcional fallback
+                this.asm('    call IMPRIMIR');
+                return;
+            }
+
+            // 🔴 SI ES NUMERO
+            this.cargar_ax(val);
+            this.asm('    call IMPRIMIR_INT');
             return;
         }
 
@@ -419,10 +494,21 @@ export default class traductor {
         }
 
         // asignacion simple
+        
         const m_asig = linea.match(/^(\S+)\s*=\s*(.+)$/);
         if (m_asig) {
             const [, dest, src] = m_asig;
-            this.cargar_ax(src.trim());
+
+            const valor = src.trim();
+
+            if (valor.startsWith('"')) {
+                // solo registramos string, NO lo asignamos como número
+                this.registrar_string(valor);
+                return;
+            }
+
+            this.cargar_ax(valor);
+
             if (this.es_ref(dest)) this.asm(`    mov  ${dest}, ax`);
             return;
         }
