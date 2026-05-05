@@ -151,14 +151,18 @@ export default class traductor {
         const mnem  = contenido.slice(0, espacio);
         const resto = contenido.slice(espacio).trim();
         const coma  = resto.indexOf(',');
+        
         if (coma === -1) {
-            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)}${resto}`);
+            // forzamos el espacio agregando " " antes de resto y subimos el pad a 20
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(20)} ${resto}`);
         } else {
             const op1 = resto.slice(0, coma).trim();
             const op2 = resto.slice(coma + 1).trim();
-            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)}${op1.padEnd(20)}${op2}`);
+            // mismo ajuste para instrucciones con dos operandos
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(20)} ${op1.padEnd(15)} ${op2}`);
         }
     }
+    
 
     nombre_programa() {
         const p = this.tabla.find(s => s.tipo === 'PROGRAMA');

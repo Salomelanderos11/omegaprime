@@ -120,6 +120,7 @@ export default class analizadorsemantico {
         }
 
         // --- validacion de asignaciones ---
+        // --- validacion de asignaciones ---
         if (tiponodo == "<asignacion>") {
             let nombrevar = nodo.hijos[0].valor;
             let simboloexistente = this.tabla.find(simbolo => simbolo.nombre === nombrevar);
@@ -132,19 +133,11 @@ export default class analizadorsemantico {
                 let tokennuevo = expresion.hijos[0].hijos[0];
 
                 if (tokennuevo) {
-                    let expresionpasig = expresion.hijos[1];
-
                     if ((tipooriginal == "int" || tipooriginal == "float") && tokennuevo.tipo == "CADENA") {
                         this.errores.push(`error de tipo: '${nombrevar}' (${tipooriginal}) no acepta cadenas.`);
                     } else if (tipooriginal == "String" && tokennuevo.tipo == "NUMERO") {
                         this.errores.push(`error de tipo: '${nombrevar}' (String) no acepta numeros.`);
-                    } else {
-                        if (expresionpasig && expresionpasig.hijos && expresionpasig.hijos.length > 0) {
-                            simboloexistente.valor = 0;
-                        } else {
-                            simboloexistente.valor = tokennuevo.valor;
-                        }
-                    }
+                    }    
                 }
             }
         }

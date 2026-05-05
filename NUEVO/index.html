@@ -9,122 +9,144 @@
 <body>
     <section>COMPILADOR OMEGAPRIME</section>
     <section>
-    <div id="scanner" class="grid-container">
-        <div class="grid-title">Scanner</div>
+        <div id="scanner" class="grid-container">
+            <div class="grid-title">Scanner</div>
+            
+            <textarea id="codigo">programa EvaluacionProfunda <?
+            crear int base = 10;
+            crear int altura = 5;
+            crear int area = (base por altura) entre 2;
+            crear String inicio = "Calculando...";
+
+            mostrar(inicio);
+            mostrar(area);
+
+            si (area mayor 20) {
+                mostrar("Area grande");
+                crear int doble = area por 2;
+                
+                si (doble igual 50) {
+                    mostrar("El doble es 50");
+                } sino {
+                    mostrar("Doble distinto de 50");
+                }
+            } sino {
+                mostrar("Area pequena");
+                area = area mas 100;
+            }
+
+            crear int opCompleja = (base mas 5) por (altura menos 2) mas area;
+            mostrar(opCompleja);
+            ?></textarea>
         
-        <textarea id="codigo">programa EvaluacionProfunda <?
-crear int base = 10;
-crear int altura = 5;
-crear int area = (base por altura) entre 2;
-crear String inicio = "Calculando...";
-
-mostrar(inicio);
-mostrar(area);
-
-si (area mayor 20) {
-    mostrar("Area grande");
-    crear int doble = area por 2;
-    
-    si (doble igual 50) {
-        mostrar("El doble es 50");
-    } sino {
-        mostrar("Doble distinto de 50");
-    }
-} sino {
-    mostrar("Area pequena");
-    area = area mas 100;
-}
-
-crear int opCompleja = (base mas 5) por (altura menos 2) mas area;
-mostrar(opCompleja);
-?></textarea>
-        
-        <div id="tokens">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tipo de Token</th>
-                        <th>Valor</th>
-                        <th>Valor LF</th>
-                    </tr>
-                </thead>
-                <tbody id="tokens-body"></tbody>
-            </table>
-        </div>
-
-        <div id="btn-container">
-            <button id="btn_scan">Ejecutar Scanner</button>
-            <button id="btn_azul"  class= "btn_azul" >Perser</button>
-        </div>
-    </div>
-
-    <div class="grid-container">
-        <div class="grid-title">Panel de Control</div>
-        
-        <div class="full-width-content">
-            <div>
-                <h4 style="text-align: center; color: #7a81a8;">Tabla de Símbolos</h4>
+            <div id="tokens">
                 <table>
                     <thead>
                         <tr>
-                            <th>Símbolo</th>
-                            <th>Tipo</th>
+                            <th>Tipo de Token</th>
                             <th>Valor</th>
-                            <th>Dirección (Offset)</th> </tr>
-                    </thead>
-                    <tbody id="simbolos-body"></tbody> 
-                </table>
-            </div>
-
-            <div style="margin-top: 20px;">
-                <h4 style="text-align: center; color: #f76363;">Errores Semánticos</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Error #</th>
-                            <th>Descripción</th>
+                            <th>Valor LF</th>
                         </tr>
                     </thead>
-                    <tbody id="errores-semanticos-body"></tbody>
+                    <tbody id="tokens-body"></tbody>
                 </table>
+            </div>
+
+            <div id="btn-container">
+                <button id="btn_scan">Ejecutar Scanner</button>
+                <button id="btn_azul"  class= "btn_azul" >Perser</button>
             </div>
         </div>
 
-        <div id="btn-container">
-            <button id="btn_seman" class= "btn_azul">Ejecutar Semantico</button>
+        <div class="grid-container">
+            <div class="grid-title">Panel de Control</div>
             
+            <div class="full-width-content">
+                <div>
+                    <h4 style="text-align: center; color: #7a81a8;">Tabla de Símbolos</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Símbolo</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Dirección (Offset)</th> </tr>
+                        </thead>
+                        <tbody id="simbolos-body"></tbody> 
+                    </table>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h4 style="text-align: center; color: #f76363;">Errores Semánticos</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Error #</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="errores-semanticos-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="btn-container">
+                <button id="btn_seman" class= "btn_azul">Ejecutar Semantico</button>
+            </div>
         </div>
-    </div>
 
-    <div class="grid-container" style="display: block; width: 100%;">
-    <div class="grid-title">Código Ensamblador (ASM)</div>
-    
-    <pre id="panelAsm" style="
-        background: #2d3436; 
-        color: #00ff3c; 
-        font-size: 1.1rem;
-        padding: 20px; 
-        border-radius: 8px; 
-        overflow-y: auto; 
-        max-height: 500px;
-        font-family: 'Courier New', Courier, monospace;
-        /* ESTAS LÍNEAS SON LAS QUE HACEN QUE SE VEA EN TODO EL PANEL */
-        width: 100%; 
-        display: block;
-        box-sizing: border-box;
-        margin: 10px 0;
-        min-height: 200px;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-    "></pre>
+        <div class="grid-container" style="display: block; width: 100%;">
+            <div class="grid-title">Código Ensamblador (ASM)</div>
+            
+            <pre id="panelAsm" style="
+                background: #2d3436; 
+                color: #00ff3c; 
+                font-size: 1.1rem;
+                padding: 20px; 
+                border-radius: 8px; 
+                overflow-y: auto; 
+                max-height: 500px;
+                font-family: 'Courier New', Courier, monospace;
+                /* ESTAS LÍNEAS SON LAS QUE HACEN QUE SE VEA EN TODO EL PANEL */
+                width: 100%; 
+                display: block;
+                box-sizing: border-box;
+                margin: 10px 0;
+                min-height: 200px;
+                box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            "></pre>
 
-    <div id="btn-container" style="text-align: center; width: 100%; margin-top: 20px;">
-        <button id="btn_tac" class="btn_azul" style="padding: 10px 30px;">Generar Código Ensamblador</button>
-    </div>
-</div>
-    <div class="grid-container">
-        <div class="grid-title">Errores Semánticos</div>
-    </div>
-</section>
+            <div id="btn-container" style="text-align: center; width: 100%; margin-top: 20px;">
+                <button id="btn_tac" class="btn_azul" style="padding: 10px 30px;">Generar Código Ensamblador</button>
+            </div>
+        </div>
+
+        <div class="grid-container" style="display: block; width: 100%;">
+            <div class="grid-title">Errores Semánticos / Traductor Objeto</div>
+            
+            <pre id="errores-semanticos-contenido" style="
+                background: #2d3436; 
+                color: #00ff3c; 
+                font-size: 1.1rem;
+                padding: 20px; 
+                border-radius: 8px; 
+                overflow-y: auto; 
+                max-height: 500px;
+                font-family: 'Courier New', Courier, monospace;
+                width: 100%; 
+                display: block;
+                box-sizing: border-box;
+                margin: 10px 0;
+                min-height: 200px;
+                box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            "></pre>
+
+            <div id="btn-container" style="text-align: center; width: 100%; margin-top: 20px;">
+                <button id="btn_objeto" class="btn_azul" style="padding: 10px 30px;">Ejecutar Traductor Objeto</button>
+            </div>
+        </div>
+
+    </section>
 </body>
 <script type="module" src="index.js"></script>
 
