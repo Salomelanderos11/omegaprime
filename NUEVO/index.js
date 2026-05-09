@@ -2,7 +2,7 @@ import escanear from "./scanner.js";
 import Parser from "./parser.js"; 
 import AnalizadorSemantico from "./semantico.js";
 import traductor from "./traductor.js";
-import traductor_objeto from "./traductor_seg.js";
+import traductor_objeto from "./traductor_seg_2.js";
 
 const btnScan = document.getElementById("btn_scan");
 const btn_parser = document.getElementById("btn_azul");
@@ -228,53 +228,69 @@ function mostrarTraductorObjeto(asmArray) {
     contenedor.innerHTML = "";
 
     try {
-        // Importa tu clase (o usa tu instancia)
         const traductorObj = new traductor_objeto();
-        const resultadoMemoria = traductorObj.traducir(asmArray);
+        const { segmento_data, segmento_code } = traductorObj.traducir(asmArray);
 
-        if (resultadoMemoria.length === 0) {
-            contenedor.innerHTML = "<p>// No hay registros de memoria que mostrar.</p>";
+        if (!segmento_data || !segmento_code) {
+            contenedor.innerHTML = "<p>// Error en la estructura de datos devuelta.</p>";
             return;
         }
 
-        let html = `
-            <table style="width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; font-family: monospace; white-space: normal;">
+        // --- RENDERIZAR TABLA DE DATOS ---
+        let html = `<h3>📦 Segmento de Datos (Memoria)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: monospace; margin-bottom: 20px; background: #2d3436; color: white;">
                 <thead>
                     <tr style="background: #1e272c; color: #00ff3c; border-bottom: 2px solid #00ff3c;">
-                        <th style="padding: 8px; width: 15%;">Variable</th>
-                        <th style="padding: 8px; width: 20%;">Offset (Binario)</th>
-                        <th style="padding: 8px; width: 45%;">Bytes en Memoria</th>
+                        <th style="padding: 8px;">Variable</th>
+                        <th style="padding: 8px;">Offset</th>
+                        <th style="padding: 8px;">Binario</th>
                     </tr>
                 </thead>
-                <tbody>
-        `;
+                <tbody>`;
 
-        // Ahora desestructuramos 3 elementos: variable, offset y bytesArray
-        resultadoMemoria.forEach(([variable, offset, bytesArray]) => {
+        segmento_data.forEach(item => {
             html += `
-                <tr style="border-bottom: 1px solid #4a4a4a; line-height: 1.2;">
-                    <td style="padding: 2px 5px; color: #f1c40f; font-size: 0.95rem; word-wrap: break-word;">
-                        ${variable}
-                    </td>
-                    <td style="padding: 2px 5px; color: #74b9ff; font-size: 0.95rem; word-wrap: break-word;">
-                        ${offset}
-                    </td>
-                    <td style="padding: 2px 5px; word-break: break-all; font-size: 0.95rem;">
-                        ${bytesArray.join(' ')}
-                    </td>
-                </tr>
-            `;
+                <tr style="border-bottom: 1px solid #4a4a4a;">
+                    <td style="padding: 5px; color: #f1c40f;">${item.variable}</td>
+                    <td style="padding: 5px; color: #74b9ff;">${item.offset}</td>
+                    <td style="padding: 5px; font-size: 0.8rem;">${item.bytes.join(' ')}</td>
+                </tr>`;
         });
+        html += `</tbody></table>`;
 
-        html += `
-                </tbody>
-            </table>
-        `;
+        // --- RENDERIZAR SEGMENTO DE CÓDIGO ---
+        html += `<h3>⚙️ Segmento de Código (Código Máquina)</h3>
+            <div style="background: #2d3436; color: #dfe6e9; padding: 15px; font-family: monospace; border-radius: 5px;">
+                <div style="display: flex; border-bottom: 2px solid #00ff3c; color: #00ff3c; font-weight: bold; margin-bottom: 5px;">
+                    <div style="width: 15%;">Offset</div>
+                    <div style="width: 35%;">Binario (Opcode + ModRM)</div>
+                    <div style="width: 50%;">Instrucción Original</div>
+                </div>`;
+
+        segmento_code.forEach(item => {
+            if (item.tipo === "etiqueta") {
+                html += `<div style="color: #55efc4; margin-top: 10px; border-bottom: 1px solid #444;">${escapeHtml(item.original)}</div>`;
+            } else {
+                // CORRECCIÓN AQUÍ: Verificamos que operandos existe y usamos 'op.tipo'
+                const opsInfo = (item.operandos && item.operandos.length > 0) 
+                    ? item.operandos.map(op => `${op.valor} <small>(${op.tipo})</small>`).join(', ')
+                    : "";
+
+                html += `
+                    <div style="display: flex; border-bottom: 1px solid #444; font-size: 0.85rem; padding: 4px 0;">
+                        <div style="width: 15%; color: #81ecec;">${item.offset || "---"}</div>
+                        <div style="width: 35%; color: #fab1a0; word-break: break-all; padding-right: 5px;">${item.binario || "---"}</div>
+                        <div style="width: 50%; color: #dfe6e9;">${escapeHtml(item.original)}</div>
+                    </div>`;
+            }
+        });
+        html += `</div>`;
 
         contenedor.innerHTML = html;
+
     } catch (error) {
         console.error("Error al traducir objeto:", error);
-        contenedor.innerHTML = `<p style="color: #ff7675;">Error al procesar el traductor de objetos.</p>`;
+        contenedor.innerHTML = `<p style="color: #ff7675;">Error: ${error.message}</p>`;
     }
 }
 
