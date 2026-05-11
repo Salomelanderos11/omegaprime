@@ -5,11 +5,9 @@ import tabla_operandos from "./modrm.js";
 export default class traductor_objeto {
     constructor() {
         this.ascii_dict = ascii_dict;
-        this.registros_x86 = Object.keys(tabla_operandos.registros);
+        this.registros = Object.keys(tabla_operandos.registros);
         this.tabla_simbolos = []; 
     }
-
-    // --- UTILIDADES DE CONVERSIÓN ---
 
     int_binario(num, bits) {
         let mask = bits === 8 ? 0xff : (bits === 16 ? 0xffff : 0xffffffff);
@@ -29,17 +27,17 @@ export default class traductor_objeto {
         for (let i = 0; i < bin_str.length; i += 8) {
             bytes.push(bin_str.slice(i, i + 8));
         }
-        return bytes.reverse(); // Little-Endian
+        return bytes.reverse() // little endian
     }
 
-    // --- LÓGICA DE MEMORIA Y OPERANDOS ---
+    // logica de memoria y operandos
 
     identificar_tipo_operando(operando) {
         if (!operando) return null;
-        // LIMPIEZA CRÍTICA: Quitamos directivas y pasamos a Mayúsculas antes de evaluar
+        // limpieza para quitar directivas y pasar a mayusculas
         let op = operando.toUpperCase().replace(/BYTE PTR|WORD PTR/gi, '').trim();
         
-        if (this.registros_x86.includes(op)) return "Reg";
+        if (this.registros.includes(op)) return "Reg";
         if (op.startsWith("[") && op.endsWith("]")) return "Mem";
         if (/^-?\d+$/.test(op) || /^[0-9A-F]+h$/i.test(op)) return "Vi";
         if (/^".*"$/.test(op) || /^'.*'$/.test(op)) return "Vi";
@@ -49,11 +47,11 @@ export default class traductor_objeto {
 
     obtener_offset_variable(nombre) {
         const simbolo = this.tabla_simbolos.find(s => s.variable === nombre);
-        // Si existe, devolvemos su offset en binario (16 bits)
+        // si existe devolvemos su offset en binario de 16 bits
         return simbolo ? simbolo.offset : "0000000000000000"; 
     }
 
-    // --- PROCESAMIENTO DE SEGMENTOS ---
+    // procesamiento de segmentos
 
     traducir_data(lineas_data) {
         const resultado_memoria = [];
@@ -72,18 +70,21 @@ export default class traductor_objeto {
                 let array_de_bytes = [];
 
                 if (/^".*"$/.test(valor_original)){
+                    // procesamiento de strings caracter por caracter
                     const texto = valor_original.slice(1, -1);
                     for (let char of texto) {
                         const ascii = this.ascii_dict[char] || 0;
                         array_de_bytes.push(this.int_binario(ascii, 8));
                     }
                 } else if (regex_dup.test(valor_original)) {
+                    // procesamiento de directiva dup para repeticiones
                     const dup_match = valor_original.match(regex_dup);
                     const repeticiones = parseInt(dup_match[1], 10);
                     const contenido = dup_match[2].trim();
                     let base = this.dividir_bytes(this.int_binario(contenido === '?' ? 0 : parseInt(contenido), bits));
                     for (let j = 0; j < repeticiones; j++) array_de_bytes.push(...base);
                 } else {
+                    // procesamiento de valores numericos directos
                     let val = parseInt(valor_original.toLowerCase().endsWith('h') ? valor_original.slice(0, -1) : valor_original, 10);
                     array_de_bytes = this.dividir_bytes(this.int_binario(val, bits));
                 }
@@ -100,20 +101,20 @@ export default class traductor_objeto {
         const resultado_codigo = [];
         let offset_instruccion = 0;
 
-        // Auxiliar para agrupar bits en bloques de 8 (Bytes) con espacios
-        const empaquetar_en_bytes = (cadenaBits) => {
+        // auxiliar para agrupar bits en bloques de 8 con espacios
+        const empaquetado = (cadenaBits) => {
             if (!cadenaBits || cadenaBits === "---") return cadenaBits;
             const bytes = [];
             for (let i = 0; i < cadenaBits.length; i += 8) {
                 let bloque = cadenaBits.slice(i, i + 8);
-                // Relleno a la derecha para completar el byte si es necesario
+                // relleno a la derecha para completar el byte
                 bytes.push(bloque.padEnd(8, '0'));
             }
             return bytes.join(' ');
         };
 
         for (let linea of lineas_code) {
-            // 1. Filtrar etiquetas y directivas
+            // filtrar etiquetas y directivas de proceso
             if (linea.includes(":") || linea.toUpperCase().includes("PROC") || linea.toUpperCase().includes("ENDP")) {
                 resultado_codigo.push({ tipo: "etiqueta", original: linea, binario: "" });
                 continue;
@@ -123,7 +124,7 @@ export default class traductor_objeto {
             if (partes.length < 1) continue;
 
             const mnemonico = partes[0].toUpperCase();
-            // Limpieza profunda de directivas como BYTE PTR
+            // limpieza profunda de directivas de tamaño
             const ops_str = partes[1] ? partes[1].replace(/BYTE PTR|WORD PTR/gi, '').trim() : "";
             const ops_raw = ops_str ? ops_str.split(',').map(o => o.trim()) : [];
 
@@ -140,7 +141,7 @@ export default class traductor_objeto {
                 const plantilla = variantes.find(v => JSON.stringify(v.operandos) === JSON.stringify(firma));
 
                 if (plantilla) {
-                    // Lógica de tamaño: Si hay un registro de 8 bits, w=0, si no w=1
+                    // logica de tamaño para definir el bit w
                     let w_bit = "1"; 
                     operandos.forEach(op => {
                         let opNorm = op.valor.toUpperCase().replace(/BYTE PTR|WORD PTR/gi, '').trim();
@@ -150,7 +151,7 @@ export default class traductor_objeto {
 
                     let opcode = plantilla.opcode
                         .replace('w', w_bit)
-                        .replace('d', '1') // Por defecto registro es destino
+                        .replace('d', '1') 
                         .replace('s', '0');
                         
                     let modrm = "";
@@ -165,7 +166,7 @@ export default class traductor_objeto {
                             
                             if (op.tipo === "Reg") {
                                 let code = tabla_operandos.registros[valNorm].rm;
-                                // Si es instrucción de un solo operando, va en RM
+                                // asignacion de registros en campos reg o rm
                                 if (operandos.length === 1) rm = code; 
                                 else { if (i === 0) reg = code; else rm = code; }
                             } 
@@ -175,7 +176,7 @@ export default class traductor_objeto {
                                 } else {
                                     mod = "00"; rm = "110"; 
                                     let off_bin = this.obtener_offset_variable(valNorm);
-                                    // APLICAR LITTLE-ENDIAN AL OFFSET
+                                    // aplicacion de little endian al offset de memoria
                                     desplazamiento = this.dividir_bytes(off_bin).join('');
                                 }
                             } 
@@ -186,7 +187,7 @@ export default class traductor_objeto {
                                 
                                 let bits_vi = (w_bit === "0" || mnemonico === "INT") ? 8 : 16;
                                 let vi_puro = this.int_binario(num, bits_vi);
-                                // APLICAR LITTLE-ENDIAN SI ES 16 BITS
+                                // aplicacion de little endian si el inmediato es de 16 bits
                                 inmediato = (bits_vi === 16) ? this.dividir_bytes(vi_puro).join('') : vi_puro;
                             }
                         });
@@ -194,7 +195,7 @@ export default class traductor_objeto {
                         if (plantilla.reg_ext) reg = plantilla.reg_ext;
                         modrm = mod + reg + rm;
                     } else {
-                        // Formato corto: Opcode(5 bits) + Reg(3 bits)
+                        // formato corto opcode de 5 bits mas 3 bits de registro
                         if (opcode.length === 5 && operandos[0]?.tipo === "Reg") {
                             let regCode = tabla_operandos.registros[operandos[0].valor.toUpperCase()].rm;
                             opcode = opcode + regCode;
@@ -219,11 +220,12 @@ export default class traductor_objeto {
             resultado_codigo.push({
                 mnemonico,
                 original: linea,
-                binario: empaquetar_en_bytes(binario_sucio) || "---",
+                binario: empaquetado(binario_sucio) || "---",
                 offset: this.int_binario(offset_instruccion, 16)
             });
 
             if (binario_sucio) {
+                // avance del offset segun la longitud en bytes de la instruccion
                 offset_instruccion += (binario_sucio.length / 8);
             }
         }

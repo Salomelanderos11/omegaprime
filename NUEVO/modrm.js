@@ -1,6 +1,6 @@
 // modrm.js
 const tabla_operandos = {
-  // Mapeo de Registros (Campo REG o R/M con MOD=11)
+  // mapeo de registros 
   registros: {
     "AL": { rm: "000", w: "0" },
     "AX": { rm: "000", w: "1" },
@@ -20,7 +20,7 @@ const tabla_operandos = {
     "DI": { rm: "111", w: "1" }
   },
 
-  // Modos de direccionamiento de memoria (Campo R/M con MOD < 11)
+  // modos de direccionamiento de memoria 
   memoria: {
     "BX+SI": "000",
     "BX+DI": "001",
@@ -28,7 +28,7 @@ const tabla_operandos = {
     "BP+DI": "011",
     "SI":    "100",
     "DI":    "101",
-    "BP":    "110", // Nota: Si MOD=00 y RM=110, es Direccionamiento Directo (D16)
+    "BP":    "110", 
     "BX":    "111"
   }
 };

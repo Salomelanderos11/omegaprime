@@ -11,7 +11,7 @@ const tabla_opcodes = {
   "ADD": [
     { operandos: ["Reg", "Reg"], opcode: "000000dw", modrm: true,  reg_ext: null },
     { operandos: ["Reg", "Vi"],  opcode: "100000sw", modrm: true,  reg_ext: "000" },
-    { operandos: ["Mem", "Vi"],  opcode: "100000sw", modrm: true,  reg_ext: "000" } // Esta faltaba para add dl, "0"
+    { operandos: ["Mem", "Vi"],  opcode: "100000sw", modrm: true,  reg_ext: "000" } 
   ],
   "SUB": [
     { operandos: ["Reg", "Reg"], opcode: "001010dw", modrm: true,  reg_ext: null },

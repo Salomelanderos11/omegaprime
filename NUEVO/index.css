@@ -245,3 +245,29 @@ table tbody tr.errores:nth-child(even) td {
     background-color: #f76363 !important;
 }
 
+
+.tabla-dump {
+    width: 100%;
+    border-collapse: collapse; /* Elimina espacios entre celdas */
+    font-family: 'Courier New', monospace;
+    color: #00ff3c; /* Verde terminal */
+    background-color: #1a1a1a;
+}
+
+.tabla-dump td {
+    border: none; /* Asegura que no haya bordes visibles */
+    padding: 2px 10px;
+    vertical-align: top; /* Alinea el texto arriba si hay saltos de línea */
+}
+
+.col-offset {
+    width: 180px; /* Ancho fijo para el offset */
+    white-space: nowrap;
+    user-select: none; /* Evita que se seleccione el offset al copiar código */
+    opacity: 0.7;      /* Un tono un poco más tenue para diferenciar */
+}
+
+.col-bytes {
+    word-break: break-all; /* Rompe los bits si llegan al final del div */
+    text-align: left;
+}

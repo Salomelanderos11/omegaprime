@@ -13,12 +13,16 @@ export default class traductor {
         this.temporales_masm = {};
         this.strings         = [];
         this.contador_strings = 0;
+
+        // banderas de control para generacion condicional
+        this.usar_imprimir = false;
+        this.usar_imprimir_int = false;
     }
 
     // apoyo tac
     nuevo_temporal() { return `t${this.contador_temporales++}`; }
     nueva_etiqueta() { return `L${this.contador_etiquetas++}`; }
-    emitir(i)        { this.codigo_intermedio.push(i); }
+    emitir(i)         { this.codigo_intermedio.push(i); }
 
     resolver_operacion(val_izq, nodo_p) {
         if (!nodo_p) return val_izq;
@@ -51,7 +55,7 @@ export default class traductor {
         const t = nodo.tipo;
 
         if (t === 'NUMERO' || t === 'CADENA') return nodo.valor;
-        if (t === 'IDENT')                    return nodo.valor;
+        if (t === 'IDENT')                     return nodo.valor;
 
         if (t === '<programa>') {
             this.recorrer(nodo.hijos[3]);
@@ -71,7 +75,6 @@ export default class traductor {
                 const res = this.recorrer(opc_asig.hijos[1]);
 
                 if (tipo_var === 'String') {
-                    // no generar asignación TAC para strings
                     this.registrar_string(res);
                 } else {
                     this.emitir(`${nombre_var} = ${res}`);
@@ -92,6 +95,12 @@ export default class traductor {
         else if (t === '<impresion>') {
             const res = this.recorrer(nodo.hijos[2]);
             this.emitir(`print ${res}`);
+            
+            // activar banderas para incluir procedimientos en el asm final
+            this.usar_imprimir = true;
+            if (!(typeof res === 'string' && res.startsWith('"')) && this.tipo_var(res) !== 'String') {
+                this.usar_imprimir_int = true;
+            }
         }
         else if (t === '<expresion>' || t === '<termino>') {
             const izq = this.recorrer(nodo.hijos[0]);
@@ -131,7 +140,6 @@ export default class traductor {
         for (const simbolo of this.tabla) {
             if (!simbolo.tipo || simbolo.tipo.toUpperCase() === 'PROGRAMA') continue;
             if (!simbolo.nombre) continue;
-            // --- MODIFICACIÓN: Ahora extraemos también el "valor" de la tabla ---
             this.variables_masm.push({ 
                 nombre: simbolo.nombre, 
                 tipo: simbolo.tipo, 
@@ -147,7 +155,7 @@ export default class traductor {
         }
     }
 
-    // formatea en 3 columnas
+    // formateo de columnas asm
     asm(linea) {
         if (linea === '' || (/^[A-Za-z_.][A-Za-z0-9_.]*:?$/.test(linea.trim()))) {
             this.codigo_asm.push(linea);
@@ -156,11 +164,9 @@ export default class traductor {
 
         const sangria = linea.match(/^(\s*)/)[1];
         const contenido = linea.trim();
-
         const partes = contenido.split(/\s+/);
         const mnem = partes[0];
 
-        // instrucciones de 1 operando o sin operandos
         if (partes.length === 1) {
             this.codigo_asm.push(`${sangria}${mnem}`);
             return;
@@ -168,48 +174,29 @@ export default class traductor {
 
         let operandos = contenido.slice(mnem.length).trim();
 
-        // 🔥 SI YA TIENE COMA → RESPETAR
         if (operandos.includes(',')) {
             const [op1, op2] = operandos.split(',').map(o => o.trim());
-            this.codigo_asm.push(
-                `${sangria}${mnem.padEnd(12)} ${op1.padEnd(12)}, ${op2}`
-            );
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)} ${op1.padEnd(12)}, ${op2}`);
             return;
         }
 
-        //  DETECTAR INSTRUCCIONES DE 1 OPERANDO (NO LLEVAN COMA)
-        const instrucciones = [
-                            'push','pop','inc','dec','neg','not',
-                            'jmp','je','jne','jg','jl','jge','jle',
-                            'call','ret','int','loop',
-                            'div','idiv','imul','cwd'
-                        ];
+        const instrucciones = ['push','pop','inc','dec','neg','not','jmp','je','jne','jg','jl','jge','jle','call','ret','int','loop','div','idiv','imul','cwd'];
 
         if (instrucciones.includes(mnem.toLowerCase())) {
-            this.codigo_asm.push(
-                `${sangria}${mnem.padEnd(12)} ${operandos}`
-            );
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)} ${operandos}`);
             return;
         }
 
-        // 🔥 FORZAR COMA SOLO SI SON 2 OPERANDOS SIMPLES
         const ops = operandos.split(/\s+/);
-
         if (ops.length >= 2) {
             const op1 = ops[0];
             const op2 = operandos.slice(op1.length).trim();
-
-            this.codigo_asm.push(
-                `${sangria}${mnem.padEnd(12)} ${op1.padEnd(12)}, ${op2}`
-            );
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)} ${op1.padEnd(12)}, ${op2}`);
         } else {
-            this.codigo_asm.push(
-                `${sangria}${mnem.padEnd(12)} ${operandos}`
-            );
+            this.codigo_asm.push(`${sangria}${mnem.padEnd(12)} ${operandos}`);
         }
     }
     
-
     nombre_programa() {
         const p = this.tabla.find(s => s.tipo === 'PROGRAMA');
         const nombre = p ? p.nombre : 'programa';
@@ -217,8 +204,7 @@ export default class traductor {
     }
 
     es_ref(nombre) {
-        return this.variables_masm.some(v => v.nombre === nombre) ||
-               (nombre in this.temporales_masm);
+        return this.variables_masm.some(v => v.nombre === nombre) || (nombre in this.temporales_masm);
     }
 
     tipo_var(nombre) {
@@ -234,18 +220,14 @@ export default class traductor {
     }
 
     cargar_ax(val) {
-        if (this.es_ref(val)) {
+        if (this.es_ref(val) || /^-?\d+$/.test(val)) {
             this.asm(`    mov  ax, ${val}`);
-        } else if (/^-?\d+$/.test(val)) {
-            this.asm(`    mov  ax, ${val}`);
-        }  else if (val.startsWith('"')) {
-            this.asm(`    mov  ax, 0`);
         } else {
             this.asm(`    mov  ax, 0`);
         }
     }
 
-    // generador masm
+    // generador masm corregido con flags
     generar_masm() {
         const prog = this.nombre_programa();
 
@@ -256,121 +238,101 @@ export default class traductor {
         this.asm('.data');
         this.asm('');
 
+        // declaracion de variables de usuario
         if (this.variables_masm.length > 0) {
             for (const v of this.variables_masm) {
                 const pad = v.nombre.padEnd(14);
-                
-                // --- MODIFICACIÓN: Rescatar el valor inicial ---
                 let valor_inicial = v.valor;
 
-                // 🔥 LIMPIAR COMAS SI VIENEN DEL PARSER
                 if (typeof valor_inicial === 'string') {
                     valor_inicial = valor_inicial.replace(/,/g, '').trim();
                 }
 
                 if (v.tipo === 'String') {
-
                     if (valor_inicial && valor_inicial !== '0' && valor_inicial !== '""') {
                         let cadenaLimpia = String(valor_inicial).replace(/^["']|["']$/g, '');
                         this.asm(`    ${pad} DB  "${cadenaLimpia}$"`);
                     } else {
                         this.asm(`    ${pad} DB  128 DUP(0)`);
                     }
-
                 } else {
-                    // 🔥 SOLO NÚMEROS VÁLIDOS
                     let numero = 0;
-
-                    if (typeof valor_inicial === 'number') {
-                        numero = valor_inicial;
-                    } else if (/^-?\d+$/.test(valor_inicial)) {
-                        numero = parseInt(valor_inicial);
-                    }
-
+                    if (typeof valor_inicial === 'number') numero = valor_inicial;
+                    else if (/^-?\d+$/.test(valor_inicial)) numero = parseInt(valor_inicial);
                     this.asm(`    ${pad} DW  ${numero}`);
                 }
             }
-            this.asm('');
         }
 
+        // declaracion de temporales
         const temps = Object.keys(this.temporales_masm);
-        if (temps.length > 0) {
-            for (const t of temps) {
-                this.asm(`    ${t.padEnd(14)} DW  0`);
-            }
-            this.asm('');
+        for (const t of temps) {
+            this.asm(`    ${t.padEnd(14)} DW  0`);
         }
 
-        this.asm('    buf_int         DB  7 DUP(?)');
-        this.asm('');
+        // incluir buffer de entero solo si se usa imprimir_int
+        if (this.usar_imprimir_int) {
+            this.asm('    buf_int        DB  7 DUP(?)');
+        }
 
         const strings_idx = this.codigo_asm.length;
         this.asm('');
-
         this.asm('.code');
         this.asm('');
 
-        // subrutina imprimir
-        this.asm('IMPRIMIR PROC');
-        this.asm('    push ax');
-        this.asm('    mov  ah, 09h');
-        this.asm('    int  21h');
-        this.asm('    pop  ax');
-        this.asm('    ret');
-        this.asm('IMPRIMIR ENDP');
-        this.asm('');
+        // incluir procedimientos de impresion solo si se detecto su uso
+        if (this.usar_imprimir) {
+            this.asm('IMPRIMIR PROC');
+            this.asm('    push ax');
+            this.asm('    mov  ah, 09h');
+            this.asm('    int  21h');
+            this.asm('    pop  ax');
+            this.asm('    ret');
+            this.asm('IMPRIMIR ENDP');
+            this.asm('');
+        }
 
-        // subrutina imprimir_int
-        this.asm('IMPRIMIR_INT PROC');
-        this.asm('    push ax');
-        this.asm('    push bx');
-        this.asm('    push cx');
-        this.asm('    push dx');
-        this.asm('    push di');
-        this.asm('');
-
-        this.asm('    lea  di, buf_int');
-        this.asm('    mov  cx, 0');
-        this.asm('    cmp  ax, 0');
-        this.asm('    jge  .positivo');
-
-        this.asm('    mov  BYTE PTR [di], "-"');   // ✔ ya correcto
-        this.asm('    inc  di');
-        this.asm('    neg  ax');
-
-        this.asm('.positivo:');
-        this.asm('    mov  bx, 10');
-
-        this.asm('.loop_div:');
-        this.asm('    xor  dx, dx');              // ✔ correcto
-        this.asm('    div  bx');
-        this.asm('    push dx');
-        this.asm('    inc  cx');
-        this.asm('    cmp  ax, 0');
-        this.asm('    jne  .loop_div');
-
-        this.asm('.loop_str:');
-        this.asm('    pop  dx');
-        this.asm('    add  dl, "0"');             // ✔ con coma
-        this.asm('    mov  [di], dl');            // ✔ con coma
-        this.asm('    inc  di');
-        this.asm('    loop .loop_str');
-
-        this.asm('    mov  BYTE PTR [di], "$"');  // ✔ con coma
-        this.asm('');
-
-        this.asm('    lea  dx, buf_int');
-        this.asm('    call IMPRIMIR');
-        this.asm('');
-
-        this.asm('    pop  di');
-        this.asm('    pop  dx');
-        this.asm('    pop  cx');
-        this.asm('    pop  bx');
-        this.asm('    pop  ax');
-        this.asm('    ret');
-        this.asm('IMPRIMIR_INT ENDP');
-        this.asm('');
+        if (this.usar_imprimir_int) {
+            this.asm('IMPRIMIR_INT PROC');
+            this.asm('    push ax');
+            this.asm('    push bx');
+            this.asm('    push cx');
+            this.asm('    push dx');
+            this.asm('    push di');
+            this.asm('    lea  di, buf_int');
+            this.asm('    mov  cx, 0');
+            this.asm('    cmp  ax, 0');
+            this.asm('    jge  .positivo');
+            this.asm('    mov  BYTE PTR [di], "-"');
+            this.asm('    inc  di');
+            this.asm('    neg  ax');
+            this.asm('.positivo:');
+            this.asm('    mov  bx, 10');
+            this.asm('.loop_div:');
+            this.asm('    xor  dx, dx');
+            this.asm('    div  bx');
+            this.asm('    push dx');
+            this.asm('    inc  cx');
+            this.asm('    cmp  ax, 0');
+            this.asm('    jne  .loop_div');
+            this.asm('.loop_str:');
+            this.asm('    pop  dx');
+            this.asm('    add  dl, "0"');
+            this.asm('    mov  [di], dl');
+            this.asm('    inc  di');
+            this.asm('    loop .loop_str');
+            this.asm('    mov  BYTE PTR [di], "$"');
+            this.asm('    lea  dx, buf_int');
+            this.asm('    call IMPRIMIR');
+            this.asm('    pop  di');
+            this.asm('    pop  dx');
+            this.asm('    pop  cx');
+            this.asm('    pop  bx');
+            this.asm('    pop  ax');
+            this.asm('    ret');
+            this.asm('IMPRIMIR_INT ENDP');
+            this.asm('');
+        }
 
         this.asm(`${prog} PROC`);
         this.asm('    mov  ax, @data');
@@ -384,35 +346,30 @@ export default class traductor {
         this.asm('    mov  ah, 4Ch');
         this.asm('    mov  al, 0');
         this.asm('    int  21h');
-        this.asm('');
-
         this.asm(`${prog} ENDP`);
         this.asm('');
         this.asm(`END ${prog}`);
 
+        // insercion condicional de literales string
         if (this.strings.length > 0) {
             const lineas = [];
             for (const s of this.strings) {
                 const escaped = s.valor.replace(/"/g, "'");
                 lineas.push(`    ${s.etiqueta.padEnd(14)} DB  "${escaped}$"`);
             }
-            lineas.push('');
             this.codigo_asm.splice(strings_idx, 1, ...lineas);
         } else {
             this.codigo_asm.splice(strings_idx, 1);
         }
     }
 
-    // traduccion de lineas tac -> masm
+    // traduccion linea a linea de tac a masm
     traducir_linea(linea) {
-
-        // etiqueta
         if (/^L\d+:$/.test(linea.trim())) {
             this.asm(`${linea.trim()}`);
             return;
         }
 
-        // salto condicional
         const m_cond = linea.match(/^if\s+(\S+)\s+(==|>|<|>=|<=|!=)\s+(\S+)\s+goto\s+(\S+)$/);
         if (m_cond) {
             const [, izq, op, der, etq] = m_cond;
@@ -425,44 +382,31 @@ export default class traductor {
             return;
         }
 
-        // salto incondicional
         const m_goto = linea.match(/^goto\s+(\S+)$/);
         if (m_goto) {
             this.asm(`    jmp  ${m_goto[1]}`);
             return;
         }
 
-        // impresion
         const m_print = linea.match(/^print\s+(.+)$/);
         if (m_print) {
             const val = m_print[1].trim();
-
-            // 🔴 SI ES STRING LITERAL
             if (val.startsWith('"')) {
                 const etq = this.registrar_string(val);
                 this.asm(`    lea  dx, ${etq}`);
                 this.asm('    call IMPRIMIR');
                 return;
             }
-
-            // 🔴 SI ES VARIABLE STRING → NO USARLA DIRECTO
             if (this.tipo_var(val) === 'String') {
-                // ⚠️ evitar lea dx, inicio
-                // no hay copia de memoria implementada
-
-                // solución: ignorar o usar string vacío
-                this.asm(`    lea  dx, str_0`); // opcional fallback
+                this.asm(`    lea  dx, str_0`);
                 this.asm('    call IMPRIMIR');
                 return;
             }
-
-            // 🔴 SI ES NUMERO
             this.cargar_ax(val);
             this.asm('    call IMPRIMIR_INT');
             return;
         }
 
-        // asignacion con operacion
         const m_op = linea.match(/^(\S+)\s*=\s*(\S+)\s*([+\-*/])\s*(\S+)$/);
         if (m_op) {
             const [, dest, izq, op, der] = m_op;
@@ -493,22 +437,15 @@ export default class traductor {
             return;
         }
 
-        // asignacion simple
-        
         const m_asig = linea.match(/^(\S+)\s*=\s*(.+)$/);
         if (m_asig) {
             const [, dest, src] = m_asig;
-
             const valor = src.trim();
-
             if (valor.startsWith('"')) {
-                // solo registramos string, NO lo asignamos como número
                 this.registrar_string(valor);
                 return;
             }
-
             this.cargar_ax(valor);
-
             if (this.es_ref(dest)) this.asm(`    mov  ${dest}, ax`);
             return;
         }

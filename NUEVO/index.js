@@ -225,72 +225,85 @@ function mostrarTraductorObjeto(asmArray) {
     const contenedor = document.getElementById("errores-semanticos-contenido");
     if (!contenedor) return;
 
+    // Configuración del contenedor (Fondo Ultra Oscuro)
+    contenedor.style.background = "#1a1a1a"; 
+    contenedor.style.color = "#00ff3c";
+    contenedor.style.padding = "30px";
+    contenedor.style.borderRadius = "12px";
+    contenedor.style.fontFamily = "'Courier New', Courier, monospace";
+    contenedor.style.fontSize = "1.2rem";
+    contenedor.style.fontWeight = "bold";
+    
+    contenedor.style.overflowX = "hidden"; 
+    contenedor.style.overflowY = "auto";   
+    contenedor.style.display = "block";
+    contenedor.style.whiteSpace = "normal"; 
+    
+    contenedor.style.boxShadow = "inset 0 0 20px rgba(0,0,0,0.9)";
     contenedor.innerHTML = "";
 
     try {
         const traductorObj = new traductor_objeto();
         const { segmento_data, segmento_code } = traductorObj.traducir(asmArray);
 
-        if (!segmento_data || !segmento_code) {
-            contenedor.innerHTML = "<p>// Error en la estructura de datos devuelta.</p>";
-            return;
-        }
+        // Estilos de tabla con fondo oscuro forzado
+        const estiloTabla = `width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 40px; background: #1a1a1a;`;
+        const estiloCeldaOffset = `width: 220px; vertical-align: top; padding: 10px 10px 10px 0; color: #00ff3c; background: #1a1a1a; border: none;`;
+        const estiloCeldaBytes = `vertical-align: top; padding: 10px 0; color: #00ff3c; background: #1a1a1a; border: none; letter-spacing: 2px; word-wrap: break-word; overflow-wrap: break-word;`;
 
-        // --- RENDERIZAR TABLA DE DATOS ---
-        let html = `<h3>📦 Segmento de Datos (Memoria)</h3>
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: monospace; margin-bottom: 20px; background: #2d3436; color: white;">
-                <thead>
-                    <tr style="background: #1e272c; color: #00ff3c; border-bottom: 2px solid #00ff3c;">
-                        <th style="padding: 8px;">Variable</th>
-                        <th style="padding: 8px;">Offset</th>
-                        <th style="padding: 8px;">Binario</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        let html = "";
+
+        // --- SEGMENTO DE DATOS ---
+        html += `<div style="margin-bottom: 5px; color: #00ff3c;"> ==========================================</div>`;
+        html += `<div style="margin-bottom: 5px; color: #00ff3c;">                     .DATA                 </div>`;
+        html += `<div style="margin-bottom: 15px; color: #00ff3c;"> ==========================================</div>`;
+        
+        html += `<table style="${estiloTabla}">
+                    <thead>
+                        <tr style="background: #1a1a1a;">
+                            <th style="${estiloCeldaOffset} text-align: left; border-bottom: 2px solid #00ff3c;">OFFSET</th>
+                            <th style="${estiloCeldaBytes} text-align: left; border-bottom: 2px solid #00ff3c;">CONTENIDO BINARIO</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
         segmento_data.forEach(item => {
-            html += `
-                <tr style="border-bottom: 1px solid #4a4a4a;">
-                    <td style="padding: 5px; color: #f1c40f;">${item.variable}</td>
-                    <td style="padding: 5px; color: #74b9ff;">${item.offset}</td>
-                    <td style="padding: 5px; font-size: 0.8rem;">${item.bytes.join(' ')}</td>
-                </tr>`;
+            html += `<tr style="background: #1a1a1a;">
+                        <td style="${estiloCeldaOffset}">${item.offset}</td>
+                        <td style="${estiloCeldaBytes}">${item.bytes.join(' ')}</td>
+                     </tr>`;
         });
         html += `</tbody></table>`;
 
-        // --- RENDERIZAR SEGMENTO DE CÓDIGO ---
-        html += `<h3>⚙️ Segmento de Código (Código Máquina)</h3>
-            <div style="background: #2d3436; color: #dfe6e9; padding: 15px; font-family: monospace; border-radius: 5px;">
-                <div style="display: flex; border-bottom: 2px solid #00ff3c; color: #00ff3c; font-weight: bold; margin-bottom: 5px;">
-                    <div style="width: 15%;">Offset</div>
-                    <div style="width: 35%;">Binario (Opcode + ModRM)</div>
-                    <div style="width: 50%;">Instrucción Original</div>
-                </div>`;
+        // --- SEGMENTO DE CÓDIGO ---
+        html += `<div style="margin-bottom: 5px; color: #00ff3c;">==========================================</div>`;
+        html += `<div style="margin-bottom: 5px; color: #00ff3c;">                    .CODE                  </div>`;
+        html += `<div style="margin-bottom: 15px; color: #00ff3c;">==========================================</div>`;
+
+        html += `<table style="${estiloTabla}">
+                    <thead>
+                        <tr style="background: #1a1a1a;">
+                            <th style="${estiloCeldaOffset} text-align: left; border-bottom: 2px solid #00ff3c;">OFFSET</th>
+                            <th style="${estiloCeldaBytes} text-align: left; border-bottom: 2px solid #00ff3c;">OPCODE </th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
         segmento_code.forEach(item => {
-            if (item.tipo === "etiqueta") {
-                html += `<div style="color: #55efc4; margin-top: 10px; border-bottom: 1px solid #444;">${escapeHtml(item.original)}</div>`;
-            } else {
-                // CORRECCIÓN AQUÍ: Verificamos que operandos existe y usamos 'op.tipo'
-                const opsInfo = (item.operandos && item.operandos.length > 0) 
-                    ? item.operandos.map(op => `${op.valor} <small>(${op.tipo})</small>`).join(', ')
-                    : "";
-
-                html += `
-                    <div style="display: flex; border-bottom: 1px solid #444; font-size: 0.85rem; padding: 4px 0;">
-                        <div style="width: 15%; color: #81ecec;">${item.offset || "---"}</div>
-                        <div style="width: 35%; color: #fab1a0; word-break: break-all; padding-right: 5px;">${item.binario || "---"}</div>
-                        <div style="width: 50%; color: #dfe6e9;">${escapeHtml(item.original)}</div>
-                    </div>`;
+            if (item.tipo !== "etiqueta") {
+                html += `<tr style="background: #1a1a1a;">
+                            <td style="${estiloCeldaOffset}">${item.offset || "---"}</td>
+                            <td style="${estiloCeldaBytes}">${item.binario || "---"}</td>
+                         </tr>`;
             }
         });
-        html += `</div>`;
+        html += `</tbody></table>`;
 
         contenedor.innerHTML = html;
 
     } catch (error) {
         console.error("Error al traducir objeto:", error);
-        contenedor.innerHTML = `<p style="color: #ff7675;">Error: ${error.message}</p>`;
+        contenedor.innerHTML = `<span style="color: #ff4d4d;">❌ ERROR: ${error.message}</span>`;
     }
 }
 
